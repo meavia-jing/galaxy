@@ -1,6 +1,7 @@
 """Catalog domain: Category -> Product (SPU) -> SKU."""
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import F, Q
@@ -23,14 +24,26 @@ class Category(models.Model):
         verbose_name = "分类"
         verbose_name_plural = "分类"
         ordering = ["sort_order", "id"]
-        constraints = [
-            models.CheckConstraint(
-                condition=~Q(parent=F("id")), name="catalog_category_not_self_parent"
-            ),
-        ]
+        # 注意：MariaDB 11.5+ 不允许 CHECK 约束引用 AUTO_INCREMENT 列 id，
+        # 因此「父分类不能是自己」放在 model.clean() 与 admin 校验中实现。
 
     def __str__(self) -> str:
         return self.name
+
+    def clean(self):
+        super().clean()
+        if self.parent_id and self.pk and self.parent_id == self.pk:
+            raise ValidationError({"parent": "父分类不能是自己"})
+        # 禁止循环：沿父链向上查找不能回到自己
+        ancestor = self.parent
+        seen = 0
+        while ancestor is not None:
+            seen += 1
+            if seen > 10:
+                raise ValidationError({"parent": "分类层级异常，疑似循环引用"})
+            if self.pk and ancestor.pk == self.pk:
+                raise ValidationError({"parent": "不能形成循环分类"})
+            ancestor = ancestor.parent
 
 
 class Product(models.Model):

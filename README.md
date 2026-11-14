@@ -21,12 +21,27 @@ scripts/    启动脚本
 
 ### 1. 数据库初始化（一次性）
 
+MariaDB 客户端位于 `D:\mariadb\bin\`，脚本已备好：
+
+```powershell
+& "D:\mariadb\bin\mariadb.exe" -u root -p --protocol=tcp -h 127.0.0.1 -e "source scripts/init-db.sql"
+```
+
+或手工执行：
+
 ```sql
 CREATE DATABASE shop CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'shop'@'localhost' IDENTIFIED BY '<password>';
 GRANT ALL PRIVILEGES ON shop.* TO 'shop'@'localhost';
 FLUSH PRIVILEGES;
 ```
+
+> 驱动说明：本机没有 MSVC 编译器，`mysqlclient` 无法安装，因此改用纯 Python 的
+> `PyMySQL`，并在 `backend/config/__init__.py` 里 `install_as_MySQLdb()`，
+> Django 的 MySQL 后端无需改动。生产环境（有编译环境）建议换回 `mysqlclient`。
+>
+> 注意：MariaDB 11.5+ 不允许 CHECK 约束引用 `AUTO_INCREMENT` 列，
+> 因此「分类父级不能是自己」的校验放在 `Category.clean()` 而不是数据库约束。
 
 把密码写入 `backend/.env` 的 `DB_PASSWORD`，并复制 `.env.example` 作为模板。
 

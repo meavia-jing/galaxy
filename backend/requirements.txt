@@ -6,4 +6,6 @@ django-cors-headers==4.4.0
 Pillow==10.4.0
 python-dotenv==1.0.1
 redis==5.2.1
-mysqlclient==2.2.7
+# 数据库驱动：mysqlclient 需要 C 编译器；Windows 无编译环境时用 PyMySQL
+# （已在本机锁定 PyMySQL）。生产 Ubuntu 建议安装 mysqlclient。
+PyMySQL==1.4.6
