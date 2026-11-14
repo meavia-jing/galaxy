@@ -31,12 +31,15 @@ export const useAuthStore = defineStore('auth', () => {
     if (initialized.value || initializing.value) return
     initializing.value = true
     try {
-      await ensureCsrf()
+      await ensureCsrf().catch(() => undefined)
       const token = await refreshAccessToken()
       if (token) {
         user.value = await apiGet<UserProfile>('/users/me/').catch(() => null)
         if (!user.value) setAccessToken(null)
       }
+    } catch {
+      user.value = null
+      setAccessToken(null)
     } finally {
       initializing.value = false
       initialized.value = true

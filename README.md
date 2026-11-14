@@ -78,6 +78,15 @@ Vite 把 `/api`、`/media`、`/admin` 代理到 `127.0.0.1:8000`。
 购物车、订单、支付、优惠券、通知、评价、客服为后续迭代（I04–I09），
 界面入口按计划保持隐藏，并由接口层拒绝。
 
+## 交付证据截图
+
+| 截图 | 说明 |
+| --- | --- |
+| `docs/screenshots/01-home.png` | 前台首页（轮播 + 精选推荐 + 全部新品） |
+| `docs/screenshots/02-admin-products.png` | Django 后台商品管理列表 |
+| `docs/screenshots/03-api-swagger.png` | OpenAPI / Swagger 接口文档 |
+| `docs/screenshots/04-account.png` | 个人中心（登录态与资料编辑） |
+
 ## 生产部署（Ubuntu 24.04）
 
 见 `docs/deployment.md`：Nginx + Gunicorn + systemd 直接部署，不使用容器。

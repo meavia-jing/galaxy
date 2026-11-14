@@ -84,7 +84,7 @@ function toApiError(error: AxiosError): ApiRequestError {
 async function refreshAccessToken(): Promise<string | null> {
   if (!refreshing) {
     refreshing = axios
-      .post<Envelope<{ access: string }>>('/api/v1/refresh/', null, {
+      .post<Envelope<{ access: string }>>('/api/v1/auth/refresh/', null, {
         withCredentials: true,
         headers: { 'X-CSRFToken': readCookie('csrftoken') },
       })
@@ -105,7 +105,7 @@ async function refreshAccessToken(): Promise<string | null> {
 }
 
 export async function ensureCsrf(): Promise<void> {
-  await axios.get('/api/v1/csrf/', { withCredentials: true })
+  await axios.get('/api/v1/auth/csrf/', { withCredentials: true })
 }
 
 http.interceptors.response.use(

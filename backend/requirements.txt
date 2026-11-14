@@ -5,4 +5,5 @@ drf-spectacular==0.28.0
 django-cors-headers==4.4.0
 Pillow==10.4.0
 python-dotenv==1.0.1
+redis==5.2.1
 mysqlclient==2.2.7
