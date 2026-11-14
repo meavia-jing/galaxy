@@ -1,0 +1,79 @@
+export interface Category {
+  id: string
+  name: string
+  slug: string
+  parent_id: string | number | null
+  sort_order: number
+}
+
+export interface ProductSummary {
+  id: string
+  title: string
+  slug: string
+  subtitle: string
+  category_id: string
+  category_name: string
+  price_min: string
+  price_max: string
+  cover_image: string
+  is_featured: boolean
+}
+
+export interface Sku {
+  id: string
+  sku_code: string
+  attributes: Record<string, string>
+  price: string
+  stock_available: number
+  is_active: boolean
+}
+
+export interface ProductImage {
+  id: string
+  path: string
+  alt_text: string
+  sort_order: number
+}
+
+export interface ProductDetail extends ProductSummary {
+  description: string
+  images: ProductImage[]
+  skus: Sku[]
+}
+
+export interface Banner {
+  id: string
+  title: string
+  image_path: string
+  target_url: string
+  sort_order: number
+}
+
+export interface ContentPage {
+  slug: string
+  title: string
+  body: string
+  published_at: string
+}
+
+export interface PageResult<T> {
+  items: T[]
+  page: number
+  page_size: number
+  total: number
+}
+
+export interface UserProfile {
+  id: string
+  username: string
+  nickname: string
+  email: string
+  role: string
+  must_change_password: boolean
+  date_joined: string
+}
+
+export function formatPrice(value: string | number): string {
+  const num = typeof value === 'number' ? value : Number.parseFloat(value || '0')
+  return num.toFixed(2)
+}
