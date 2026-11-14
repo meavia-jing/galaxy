@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>MCP 安装检查看板</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --line: #262b36;
+    --text: #e7eaf0;
+    --muted: #8b93a3;
+    --ok: #3fd18b;
+    --warn: #f5b544;
+    --accent: #6aa6ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 34px 40px 40px;
+    background: radial-gradient(1100px 520px at 12% -10%, #1b2233 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 {
+    margin: 0 0 6px;
+    font-size: 25px;
+    letter-spacing: .4px;
+    font-weight: 650;
+  }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 22px; }
+  .sub code { color: var(--accent); font-family: Consolas, monospace; }
+
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .card .k { color: var(--muted); font-size: 11.5px; letter-spacing: .6px; text-transform: uppercase; }
+  .card .v { font-size: 26px; font-weight: 660; margin-top: 6px; }
+  .card .v small { font-size: 13px; color: var(--muted); font-weight: 400; }
+  .card.ok .v { color: var(--ok); }
+
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  th, td { padding: 11px 14px; text-align: left; font-size: 13.5px; border-bottom: 1px solid var(--line); }
+  th { background: #1c2029; color: var(--muted); font-weight: 600; font-size: 12px; letter-spacing: .5px; }
+  tr:last-child td { border-bottom: none; }
+  td.mono { font-family: Consolas, monospace; font-size: 12.5px; color: #b9c2d4; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+  }
+  .pill.ready { background: rgba(63, 209, 139, .13); color: var(--ok); }
+  .pill.soft { background: rgba(245, 181, 68, .13); color: var(--warn); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .foot { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .box h3 { margin: 0 0 10px; font-size: 12.5px; color: var(--muted); letter-spacing: .6px; text-transform: uppercase; font-weight: 600; }
+  .box ul { margin: 0; padding-left: 17px; font-size: 12.8px; line-height: 1.85; color: #cbd3e1; }
+  .box ul li::marker { color: var(--accent); }
+  .ok-text { color: var(--ok); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>MCP 安装检查看板</h1>
+<div class="sub">
+  配置文件 <code>C:\Users\zhang\.cursor\mcp.json</code> · Windows 11 · Node v24.14.0 · 验证方式：JSON-RPC 握手 + tools/list + 真实 tools/call
+</div>
+
+<div class="cards">
+  <div class="card ok"><div class="k">检查通过</div><div class="v">7 / 7 <small>外部服务</small></div></div>
+  <div class="card"><div class="k">工具总数</div><div class="v">96 <small>个</small></div></div>
+  <div class="card"><div class="k">内置能力</div><div class="v">1 <small>computer use</small></div></div>
+  <div class="card"><div class="k">失败</div><div class="v" style="color:var(--ok)">0</div></div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:16%">需求</th>
+      <th style="width:30%">包 / 来源</th>
+      <th style="width:22%">Cursor 命名空间</th>
+      <th style="width:12%">工具数</th>
+      <th style="width:20%">状态</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>windows-cli</b></td>
+      <td class="mono">@simonb97/server-win-cli 0.2.1</td>
+      <td class="mono">user-windows-cli</td>
+      <td>9 · 11</td>
+      <td><span class="pill ready"><span class="dot"></span>ready</span></td>
+    </tr>
+    <tr>
+      <td><b>redis</b></td>
+      <td class="mono">@modelcontextprotocol/server-redis</td>
+      <td class="mono">user-redis</td>
+      <td>4 · 6</td>
+      <td><span class="pill ready"><span class="dot"></span>ready</span></td>
+    </tr>
+    <tr>
+      <td><b>mysql</b></td>
+      <td class="mono">@benborla29/mcp-server-mysql 2.0.9</td>
+      <td class="mono">user-mysql</td>
+      <td>1 · 3</td>
+      <td><span class="pill ready"><span class="dot"></span>ready</span></td>
+    </tr>
+    <tr>
+      <td><b>playwright</b></td>
+      <td class="mono">@playwright/mcp 0.0.85</td>
+      <td class="mono">user-playwright</td>
+      <td>25 · 27</td>
+      <td><span class="pill ready"><span class="dot"></span>已用 Chrome 实测</span></td>
+    </tr>
+    <tr>
+      <td><b>computer use</b></td>
+      <td class="mono">Cursor 内置（无外部进程）</td>
+      <td class="mono">cursor-computer-use</td>
+      <td>10</td>
+      <td><span class="pill ready"><span class="dot"></span>截图实测通过</span></td>
+    </tr>
+    <tr>
+      <td><b>Chrome DevTools</b></td>
+      <td class="mono">chrome-devtools-mcp 1.13.0</td>
+      <td class="mono">user-chrome-devtools</td>
+      <td>33 · 35</td>
+      <td><span class="pill ready"><span class="dot"></span>ready</span></td>
+    </tr>
+    <tr>
+      <td><b>godot</b></td>
+      <td class="mono">@coding-solo/godot-mcp 0.1.1</td>
+      <td class="mono">user-godot</td>
+      <td>14 · 16</td>
+      <td><span class="pill soft"><span class="dot"></span>ready · 待装 Godot 4</span></td>
+    </tr>
+    <tr>
+      <td><b>blender</b></td>
+      <td class="mono">mcp-for-blender（原 blender-mcp）</td>
+      <td class="mono">user-blender</td>
+      <td>10 · 17</td>
+      <td><span class="pill soft"><span class="dot"></span>ready · 待装 Blender</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="foot">
+  <div class="box">
+    <h3>真实调用证据</h3>
+    <ul>
+      <li>redis：<span class="ok-text">set / get mcp:check → ok-2026</span></li>
+      <li>mysql：<span class="ok-text">SELECT COUNT(*) FROM catalog_product → 8</span>（4.89 ms）</li>
+      <li>playwright：<span class="ok-text">page.goto(127.0.0.1:5173) → 云集商城</span></li>
+      <li>computer use：捕获 1920×1080 主屏成功</li>
+    </ul>
+  </div>
+  <div class="box">
+    <h3>前两列说明</h3>
+    <ul>
+      <li>「工具数」左为脚本直连计数，右为 Cursor 注入 mcp_auth 等包装后的计数</li>
+      <li>godot / blender 服务本身可用，需安装宿主软件才能实际操作场景</li>
+      <li>复检：<span class="mono">node D:\myProject\scripts\mcp-check.mjs</span></li>
+      <li>报告：docs/MCP安装检查报告.md · 模板：docs/mcp.example.json</li>
+    </ul>
+  </div>
+</div>
+
+</body>
+</html>

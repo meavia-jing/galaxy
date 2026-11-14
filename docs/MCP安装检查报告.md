@@ -6,6 +6,7 @@
 | 执行环境 | Windows 11 (10.0.26200) / Node v24.14.0 / npm 11.9.0 / uv 0.9 / Python 3.12.10 |
 | 配置文件 | `C:\Users\zhang\.cursor\mcp.json`（用户级，所有工作区生效） |
 | 检查工具 | `scripts/mcp-check.mjs`（JSON-RPC 握手 + `tools/list`）、`scripts/mcp-smoke.mjs`（真实 `tools/call`） |
+| 状态看板 | `docs/mcp-status.html`（可复用的可视化页面） |
 | 结论 | 8 项需求中 7 项可用（含内置 computer use 与改用系统 Chrome 的 playwright），2 项已配置但因本机缺少宿主软件待启用 |
 
 ## 1. 安装清单
