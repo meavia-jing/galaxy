@@ -1,12 +1,15 @@
 """Custom user model — must exist before the first migration."""
 import re
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
 
 USERNAME_RE = re.compile(r"^[a-z0-9_]{4,32}$")
+# 手机号或固话：1[3-9]xxxxxxxxx / 0xx-xxxxxxx(x)
+PHONE_RE = re.compile(r"^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8})$")
 
 
 class UserManager(BaseUserManager):
@@ -92,3 +95,47 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.auth_version = models.F("auth_version") + 1
         self.save(update_fields=["auth_version", "updated_at"])
         self.refresh_from_db(fields=["auth_version"])
+
+
+class Address(models.Model):
+    """收货地址。
+
+    删除策略：物理删除。订单在创建时把收件人、电话、完整地址写入
+    ``Order.address_snapshot``，因此删除地址不会改变历史订单内容。
+
+    「每人最多一个默认地址」由服务层在 ``transaction.atomic()`` 内先
+    ``SELECT ... FOR UPDATE`` 锁定用户行再切换默认项来保证；MySQL/MariaDB
+    不支持部分唯一索引，所以不在数据库层加约束。
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="addresses",
+        verbose_name="用户",
+    )
+    recipient = models.CharField("收件人", max_length=50)
+    phone = models.CharField(
+        "联系电话",
+        max_length=20,
+        validators=[RegexValidator(PHONE_RE, "请填写正确的手机号或固话（如 13800138000 / 010-12345678）")],
+    )
+    province = models.CharField("省", max_length=50)
+    city = models.CharField("市", max_length=50)
+    district = models.CharField("区/县", max_length=50)
+    detail = models.CharField("详细地址", max_length=200)
+    is_default = models.BooleanField("默认地址", default=False)
+    created_at = models.DateTimeField("创建时间", auto_now_add=True)
+    updated_at = models.DateTimeField("更新时间", auto_now=True)
+
+    class Meta:
+        db_table = "accounts_address"
+        verbose_name = "收货地址"
+        verbose_name_plural = "收货地址"
+        ordering = ["-is_default", "-updated_at", "-id"]
+        indexes = [
+            models.Index(fields=["user", "is_default"], name="addr_user_default_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.recipient} {self.province}{self.city}{self.district}{self.detail}"

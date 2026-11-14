@@ -12,6 +12,7 @@ admin.site.index_title = "运营管理"
 api_v1 = [
     path("auth/", include("apps.accounts.urls")),
     path("users/", include("apps.accounts.user_urls")),
+    path("", include("apps.accounts.address_urls")),
     path("", include("apps.catalog.urls")),
     path("", include("apps.cms.urls")),
 ]

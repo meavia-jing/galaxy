@@ -25,7 +25,11 @@ def _fields_from_detail(detail):
     if isinstance(detail, dict):
         out = {}
         for key, value in detail.items():
-            if key in {"detail", "non_field_errors"}:
+            if key == "non_field_errors":
+                continue
+            # 通用错误的 payload 是 {"detail": "字符串"}；但这里 detail 也可能是
+            # 地址模型的真实字段名，其值是列表，不能当作通用消息丢弃。
+            if key == "detail" and isinstance(value, str):
                 continue
             if isinstance(value, (list, tuple)):
                 out[key] = " ".join(str(item) for item in value)

@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
+from .models import Address
+
 User = get_user_model()
 
 
@@ -73,3 +75,38 @@ class ChangePasswordSerializer(serializers.Serializer):
         if value == self.initial_data.get("old_password"):
             raise serializers.ValidationError("新密码不能与原密码相同")
         return value
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    """Address payload; ``user`` is always taken from the session, never the body."""
+
+    id = serializers.SerializerMethodField()
+    recipient = serializers.CharField(max_length=50)
+    province = serializers.CharField(max_length=50)
+    city = serializers.CharField(max_length=50)
+    district = serializers.CharField(max_length=50)
+    detail = serializers.CharField(max_length=200)
+    is_default = serializers.BooleanField(required=False, default=False)
+
+    class Meta:
+        model = Address
+        fields = [
+            "id", "recipient", "phone", "province", "city", "district",
+            "detail", "is_default", "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def get_id(self, obj) -> str:
+        return str(obj.pk)
+
+    def _strip(self, attrs: dict, key: str) -> None:
+        if key in attrs and isinstance(attrs[key], str):
+            attrs[key] = attrs[key].strip()
+
+    def validate(self, attrs: dict) -> dict:
+        for key in ("recipient", "phone", "province", "city", "district", "detail"):
+            self._strip(attrs, key)
+        for key in ("recipient", "province", "city", "district", "detail"):
+            if key in attrs and not attrs[key]:
+                raise serializers.ValidationError({key: "该字段不能为空"})
+        return attrs

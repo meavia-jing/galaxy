@@ -7,18 +7,22 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from common.exceptions import BusinessError
 
+from .models import Address
 from .serializers import (
+    AddressSerializer,
     ChangePasswordSerializer,
     ProfileSerializer,
     RegisterSerializer,
     UserSerializer,
 )
+from .services import create_address, delete_address, update_address
 from .tokens import ShopTokenObtainPairSerializer, tokens_for_user
 
 REFRESH_COOKIE = "refresh_token"
@@ -184,3 +188,33 @@ class ChangePasswordView(APIView):
         response = Response({"access": str(access), "user": UserSerializer(user).data})
         _set_refresh_cookie(response, str(refresh))
         return response
+
+
+class AddressViewSet(ModelViewSet):
+    """CRUD for the caller's own addresses; other users' rows are invisible."""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = AddressSerializer
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    pagination_class = None
+
+    def get_queryset(self):
+        return Address.objects.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        address = create_address(request.user, dict(serializer.validated_data))
+        return Response(self.get_serializer(address).data, status=status.HTTP_201_CREATED)
+
+    def partial_update(self, request, *args, **kwargs):
+        address = self.get_object()
+        serializer = self.get_serializer(address, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        address = update_address(request.user, address, dict(serializer.validated_data))
+        return Response(self.get_serializer(address).data)
+
+    def destroy(self, request, *args, **kwargs):
+        address = self.get_object()
+        delete_address(request.user, address)
+        return Response(status=status.HTTP_204_NO_CONTENT)
