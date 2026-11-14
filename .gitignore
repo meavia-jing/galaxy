@@ -22,3 +22,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
+
+# MCP 工具产生的临时产物
+.playwright-mcp/

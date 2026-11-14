@@ -1,0 +1,50 @@
+{
+  "mcpServers": {
+    "windows-cli": {
+      "command": "npx",
+      "args": ["-y", "@simonb97/server-win-cli"],
+      "env": {
+        "WIN_CLI_ALLOWED_DIRECTORIES": "D:\\myProject,C:\\Users\\zhang",
+        "WIN_CLI_MAX_COMMAND_TIMEOUT": "60000"
+      }
+    },
+    "redis": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-redis", "redis://127.0.0.1:6379"]
+    },
+    "mysql": {
+      "command": "npx",
+      "args": ["-y", "@benborla29/mcp-server-mysql"],
+      "env": {
+        "MYSQL_HOST": "127.0.0.1",
+        "MYSQL_PORT": "3306",
+        "MYSQL_USER": "shop",
+        "MYSQL_PASS": "<你的数据库口令>",
+        "MYSQL_DB": "shop",
+        "ALLOW_INSERT_OPERATION": "true",
+        "ALLOW_UPDATE_OPERATION": "true",
+        "ALLOW_DELETE_OPERATION": "false"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--isolated", "--browser", "chrome"]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest", "--isolated"]
+    },
+    "godot": {
+      "command": "npx",
+      "args": ["-y", "@coding-solo/godot-mcp"],
+      "env": {
+        "GODOT_PATH": "C:\\Program Files\\Godot\\Godot_v4.4-stable_win64.exe",
+        "DEBUG": "false"
+      }
+    },
+    "blender": {
+      "command": "uvx",
+      "args": ["mcp-for-blender"]
+    }
+  }
+}
