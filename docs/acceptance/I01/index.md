@@ -1,7 +1,7 @@
 # I01 基础框架与直接部署 — 验收台账
 
 - 迭代：I01
-- 计划版本：1.1
+- 计划版本：1.2
 - 开发环境：Windows 11 / Python 3.12.10 / Node.js 24.14.0 / MariaDB 13.0.2 / Redis 7.2.16
 - 生产目标：Ubuntu 24.04 直接部署（Nginx + Gunicorn + systemd）
 - 人工审核人：待指定
