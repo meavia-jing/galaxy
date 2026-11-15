@@ -1,12 +1,13 @@
 ﻿#Requires -Version 7.0
 <#
 .SYNOPSIS
-    冒烟层门禁：13 项固定检查，3 分钟内跑完，任一失败退出码为 1。
+    冒烟层门禁：14 项固定检查，3 分钟内跑完，任一失败退出码为 1。
 
 .DESCRIPTION
-    对应 docs/testing/用例矩阵.md 中的 SMK-01 ~ SMK-13。
+    对应 docs/testing/用例矩阵.md 中的 SMK-01 ~ SMK-14。
     检查四端口存活、健康探针、Swagger、演示账号登录、三个公开列表接口、
-    一次地址写操作（写后即清理）、前端首页。
+    一次地址写操作（写后即清理）、前端首页，以及源文件行数是否超出
+    《开发架构文档》5.4 节规定的分层上限。
 
     用法（项目根目录）：
         pwsh -File scripts/smoke.ps1
@@ -91,6 +92,60 @@ function Test-Port {
 }
 
 $script:results = [System.Collections.Generic.List[object]]::new()
+
+# 《开发架构文档》5.4 节：单个源文件行数上限
+$script:sizeLimits = @{
+    ".py"  = 400
+    ".vue" = 300
+    ".ts"  = 300
+    ".tsx" = 300
+    ".js"  = 300
+    ".mjs" = 300
+    ".cjs" = 300
+    ".css" = 500
+    ".scss" = 500
+    ".less" = 500
+}
+$script:hardCap = 800
+
+function Get-FileSizeReport {
+    <#
+        统计源文件行数并返回超限项。排除生成文件、第三方依赖与迁移文件。
+        返回对象：Checked 检查文件数；Violations 超限列表（path/lines/limit）。
+    #>
+    param([string]$Root)
+
+    $excludeDir = '[\\/](node_modules|\.venv|__pycache__|\.git|dist|media|staticfiles|migrations)[\\/]'
+    $violations = [System.Collections.Generic.List[object]]::new()
+    $checked = 0
+
+    foreach ($file in Get-ChildItem -Path $Root -Recurse -File -ErrorAction SilentlyContinue) {
+        if ($file.FullName -match $excludeDir) { continue }
+
+        $ext = $file.Extension.ToLowerInvariant()
+        $limit = $null
+        if ($script:sizeLimits.ContainsKey($ext)) {
+            $limit = $script:sizeLimits[$ext]
+        } elseif ($ext -in @('.ps1', '.sql', '.md')) {
+            $limit = $script:hardCap
+        } else {
+            continue
+        }
+        if ($limit -gt $script:hardCap) { $limit = $script:hardCap }
+
+        $checked++
+        $lines = (Get-Content $file.FullName -ErrorAction SilentlyContinue | Measure-Object -Line).Lines
+        if ($lines -gt $limit) {
+            $violations.Add([pscustomobject]@{
+                path  = $file.FullName.Substring($Root.Length).TrimStart('\', '/')
+                lines = $lines
+                limit = $limit
+            })
+        }
+    }
+
+    return [pscustomobject]@{ Checked = $checked; Violations = $violations }
+}
 
 function Add-Result {
     param(
@@ -266,6 +321,22 @@ if (-not $NoWeb) {
         $hit = $r.Text -match "云集商城"
         @{ ok = ($r.Status -eq 200 -and $hit); detail = "HTTP $($r.Status) 文案匹配=$hit" }
     }
+}
+
+# --- SMK-14 源文件行数 ------------------------------------------------------
+Invoke-Check "SMK-14" "源文件行数符合架构 5.4 上限" {
+    $report = Get-FileSizeReport -Root $repoRoot
+    if ($report.Violations.Count -eq 0) {
+        if ($report.Checked -eq 0) {
+            return @{ ok = $false; detail = "未扫描到任何源文件，检查可能失效" }
+        }
+        return @{ ok = $true; detail = "检查 $($report.Checked) 个文件，全部在上限内" }
+    }
+    $top = ($report.Violations |
+        Sort-Object lines -Descending |
+        Select-Object -First 3 |
+        ForEach-Object { "$($_.path)=$($_.lines)/$($_.limit)" }) -join "；"
+    @{ ok = $false; detail = "$($report.Violations.Count) 个文件超限：$top" }
 }
 
 # --- 汇总与报告 -------------------------------------------------------------
