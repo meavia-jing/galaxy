@@ -30,3 +30,6 @@ Thumbs.db
 backend/.coverage
 docs/testing/reports/*.xml
 docs/testing/reports/*.txt
+
+# 数据库备份含真实数据，不入库；发布制品校验清单（docs/releases）要入库
+backups/

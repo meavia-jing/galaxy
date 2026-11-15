@@ -168,19 +168,46 @@ curl -fsS https://shop.example.com/health/ready/
 ## 9 发布与回滚
 
 发布：备份数据库 → 新目录安装 → `migrate --check` → migrate → collectstatic →
-`check --deploy` → 切换 `current` 软链 → `systemctl restart shop` → 健康检查与冒烟。
+`check --deploy` → `scripts/release-manifest.ps1` 生成制品校验值 → 切换 `current` 软链 →
+`systemctl restart shop` → 健康检查与冒烟。发布记录里必须同时登记校验清单文件名与其自身 SHA256。
 
 回滚：数据库结构与旧版本兼容时，把 `current` 指回上一 release 并重启。
-不兼容时必须停写并恢复已验证备份，同时明确丢失的时间区间。
+不兼容时必须停写并恢复已验证备份（`scripts/db-restore.ps1` 或 §10 的 Linux 等价命令），同时明确丢失的时间区间。
 
-## 10 备份
+## 10 备份与恢复
+
+仓库提供两组脚本，凭据从 `backend/.env`（或仓库根 `.env`）读取，不写在命令行上。
+
+| 用途 | 脚本 | 产物 |
+| --- | --- | --- |
+| 备份 + 可选自校验恢复 | `scripts/db-backup.ps1` | `backups/<库>-<时间戳>.sql`、`.sql.sha256`、`.json`（字节数/表数/耗时/工具版本） |
+| 恢复 | `scripts/db-restore.ps1` | 先校验 `.sha256`，目标库非空时自动做 `pre-restore-*.sql` 安全备份 |
+| 发布制品校验值 | `scripts/release-manifest.ps1` | `docs/releases/<标签>-<时间戳>-SHA256SUMS.txt`（`sha256sum -c` 兼容） |
+
+```powershell
+# 备份并自校验：恢复到临时库比对表清单，通过后 DROP（需要建库权限，用 root）
+pwsh -File scripts\db-backup.ps1 -Verify -AdminUser root -AdminPassword ***
+
+# 恢复：校验值不符直接拒绝；目标库非空会先做安全备份
+pwsh -File scripts\db-restore.ps1 -DumpFile backups\shop-20261115-175534.sql -Database shop -AdminUser root
+
+# 发布制品校验值（前端 dist 13 个文件）
+pwsh -File scripts\release-manifest.ps1 -Label frontend
+```
+
+Linux 生产机等价命令（脚本逻辑一致，模板未在真机执行）：
 
 ```bash
-mariadb-dump --single-transaction shop | gzip > /srv/shop/shared/backups/shop-$(date +%F-%H%M).sql.gz
+mariadb-dump --single-transaction --quick --routines --triggers \
+  --default-character-set=utf8mb4 shop > /srv/shop/shared/backups/shop-$(date +%F-%H%M).sql
+sha256sum /srv/shop/shared/backups/shop-$(date +%F-%H%M).sql > /srv/shop/shared/backups/shop-$(date +%F-%H%M).sql.sha256
 tar czf /srv/shop/shared/backups/media-$(date +%F).tar.gz -C /srv/shop/shared media
 ```
 
-每天执行，保留 14 天，异地存储；目标 RPO ≤ 15 分钟、RTO ≤ 2 小时，须通过恢复演练验证。
+恢复演练（季度）：取最新备份 → 恢复到 `shop_restore_check` → 比对 `information_schema.tables` →
+`manage.py migrate --check` → 抽样查询 → 记录 RTO → DROP 临时库。目标 RPO ≤ 15 分钟、RTO ≤ 2 小时。
+
+每天执行备份，保留 14 天并异地存储。备份文件含真实数据，`backups/` 已在 `.gitignore` 中排除；校验清单（`docs/releases/`）随代码入库。
 
 ## 11 模板占位符与自检
 
