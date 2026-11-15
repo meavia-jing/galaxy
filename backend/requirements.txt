@@ -9,3 +9,5 @@ redis==5.2.1
 # 数据库驱动：mysqlclient 需要 C 编译器；Windows 无编译环境时用 PyMySQL
 # （已在本机锁定 PyMySQL）。生产 Ubuntu 建议安装 mysqlclient。
 PyMySQL==1.4.6
+# 生产 WSGI 服务器，供 deploy/shop.service 使用
+gunicorn==23.0.0

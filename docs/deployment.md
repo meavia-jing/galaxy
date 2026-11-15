@@ -1,8 +1,9 @@
 # 部署说明（Ubuntu 24.04 直接部署，不使用容器）
 
-> 本文件为 I01-T04 的部署说明。当前仓库已提供 Nginx / Gunicorn / systemd 模板与
-> 健康检查，验收证据需在干净 Ubuntu 24.04 上按本文执行后填写
-> `docs/acceptance/I01/I01-T04.md`。
+> 本文件为 I01-T04 的部署说明。仓库提供 `deploy/shop.service`（systemd）与
+> `deploy/nginx-shop.conf`（Nginx）两个模板，占位符见 §11；健康检查见 §8。
+> 模板未在干净 Ubuntu 24.04 上执行过，I01-T04 因此只登记「AI 已交付」；
+> 真机执行后按实测结果填写 `docs/acceptance/I01/I01-T04.md`。
 
 ## 1 目录结构
 
@@ -64,7 +65,7 @@ export DJANGO_SETTINGS_MODULE=config.settings.production
 
 ## 6 systemd
 
-`deploy/shop.service`：
+仓库模板 `deploy/shop.service`（与下文一致，按 §11 替换路径与用户）：
 
 ```ini
 [Unit]
@@ -88,13 +89,14 @@ WantedBy=multi-user.target
 ```
 
 ```bash
+sudo cp deploy/shop.service /etc/systemd/system/shop.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now shop
 ```
 
 ## 7 Nginx
 
-`deploy/nginx-shop.conf`：
+仓库模板 `deploy/nginx-shop.conf`（与下文一致，按 §11 替换域名与证书路径）：
 
 ```nginx
 server {
@@ -147,6 +149,12 @@ server {
 }
 ```
 
+```bash
+sudo cp deploy/nginx-shop.conf /etc/nginx/sites-available/shop.conf
+sudo ln -sf /etc/nginx/sites-available/shop.conf /etc/nginx/sites-enabled/shop.conf
+sudo nginx -t && sudo systemctl reload nginx
+```
+
 ## 8 健康检查
 
 - `GET /health/live/` 只反映进程存活。
@@ -173,3 +181,29 @@ tar czf /srv/shop/shared/backups/media-$(date +%F).tar.gz -C /srv/shop/shared me
 ```
 
 每天执行，保留 14 天，异地存储；目标 RPO ≤ 15 分钟、RTO ≤ 2 小时，须通过恢复演练验证。
+
+## 11 模板占位符与自检
+
+两个模板是示例配置，直接复制不会工作，必须替换下表内容。仓库根目录执行命令时按实际路径调整。
+
+| 占位符 | 出现位置 | 替换为 |
+| --- | --- | --- |
+| `/srv/shop` | 两个模板 | 实际发布根目录 |
+| `shop`（`User` / `Group`） | `deploy/shop.service` | 应用系统账号 |
+| `shop.example.com` | `deploy/nginx-shop.conf` | 真实域名 |
+| `/etc/letsencrypt/live/shop.example.com/` | `deploy/nginx-shop.conf` | 证书实际目录 |
+| `127.0.0.1:8001` | 两个模板 | Gunicorn 监听地址与端口 |
+
+自检顺序（任一步失败不要继续）：
+
+```bash
+sudo /srv/shop/current/.venv/bin/gunicorn --check-config config.wsgi:application
+sudo systemctl daemon-reload && sudo systemctl restart shop
+sudo systemctl status shop --no-pager
+curl -fsS http://127.0.0.1:8001/health/live/
+curl -fsS http://127.0.0.1:8001/health/ready/
+sudo nginx -t
+sudo journalctl -u shop -n 50 --no-pager
+```
+
+`/health/ready/` 返回 503 时先看 `checks`：`database=unavailable` 查 MariaDB 与凭据，`cache=unavailable` 查 Redis 与 `CACHE_URL`。认证与公开列表在 Redis 故障时会回源，不会整体 500（见 `docs/交接文档.md` §5.1）。

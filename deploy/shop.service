@@ -1,0 +1,23 @@
+[Unit]
+Description=Shop Gunicorn
+After=network.target mariadb.service redis-server.service
+
+[Service]
+User=shop
+Group=shop
+WorkingDirectory=/srv/shop/current/backend
+EnvironmentFile=/srv/shop/shared/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/srv/shop/current/.venv/bin/gunicorn config.wsgi:application \
+  --bind 127.0.0.1:8001 --workers 3 --timeout 60 \
+  --access-logfile /srv/shop/logs/access.log \
+  --error-logfile /srv/shop/logs/error.log
+Restart=always
+RestartSec=3
+
+# 最小权限：不获取新权限、使用私有 /tmp
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
