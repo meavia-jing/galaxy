@@ -123,7 +123,7 @@ describe('AddressesView', () => {
     expect(wrapper.text()).toContain('请填写详细地址')
   })
 
-  it('[UNIT-FE-21][I02-T05] 服务端字段错误回填到表单', async () => {
+  it('[UNIT-FE-21][I02-T05] 服务端字段错误回填到表单，总览不再重复同一句', async () => {
     mocks.createAddress.mockRejectedValue(
       new ApiRequestError({
         code: 'VALIDATION_ERROR',
@@ -135,7 +135,7 @@ describe('AddressesView', () => {
 
     await wrapper.findAll('button').find((btn) => btn.text() === '新增地址')?.trigger('click')
     await wrapper.get('input[name="recipient"]').setValue('赵六')
-    await wrapper.get('input[name="phone"]').setValue('12345')
+    await wrapper.get('input[name="phone"]').setValue('1234567')
     await wrapper.get('input[name="province"]').setValue('广东省')
     await wrapper.get('input[name="city"]').setValue('深圳市')
     await wrapper.get('input[name="district"]').setValue('南山区')
@@ -143,7 +143,12 @@ describe('AddressesView', () => {
     await wrapper.get('form').trigger('submit')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('请填写正确的手机号或固话')
+    // 字段级提示只出现在 phone 输入框下方
+    const inline = wrapper.findAll('.addr-form .error-text')
+    expect(inline).toHaveLength(1)
+    expect(inline[0].text()).toContain('请填写正确的手机号或固话')
+    // 顶部总览只给一句概括，不重复字段文案
+    expect(wrapper.get('.addr-message').text()).toBe('请修正表单中标红的字段后重试')
     expect(wrapper.find('.addr-form').exists()).toBe(true)
   })
 

@@ -128,4 +128,12 @@ function onSubmit(): void {
   gap: 10px;
   flex-wrap: wrap;
 }
+
+/* 注意：这段样式必须留在 AddressForm.vue 里。父组件 AddressesView 的 scoped 样式
+   管不到子组件内部的 `.addr-form__row`，放过去会静默失效。 */
+@media (max-width: 390px) {
+  .addr-form__row .field {
+    flex: 1 1 100%;
+  }
+}
 </style>

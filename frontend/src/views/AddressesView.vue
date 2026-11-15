@@ -106,8 +106,12 @@ async function save(payload: AddressPayload): Promise<void> {
     await load()
     message.value = wasEditing ? '地址已更新' : '地址已添加'
   } catch (err) {
-    formErrors.value = fieldErrors(err)
-    actionError.value = describe(err, '保存失败，请稍后重试')
+    const fields = fieldErrors(err)
+    formErrors.value = fields
+    // 字段错误已经写在对应输入框下方，这里只给一句总览，避免同一句话重复两遍。
+    actionError.value = Object.keys(fields).length
+      ? '请修正表单中标红的字段后重试'
+      : describe(err, '保存失败，请稍后重试')
   } finally {
     saving.value = false
   }
@@ -270,6 +274,7 @@ function fullAddress(address: Address): string {
 
   .addr-card__actions .btn {
     flex: 1 1 auto;
+    height: 38px;
   }
 }
 </style>
