@@ -75,5 +75,6 @@ export interface UserProfile {
 
 export function formatPrice(value: string | number): string {
   const num = typeof value === 'number' ? value : Number.parseFloat(value || '0')
-  return num.toFixed(2)
+  // 后端返回空串或脏数据时回落到 0.00，避免界面上出现 ¥NaN
+  return (Number.isFinite(num) ? num : 0).toFixed(2)
 }
