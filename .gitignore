@@ -25,3 +25,8 @@ Thumbs.db
 
 # MCP 工具产生的临时产物
 .playwright-mcp/
+
+# 测试产物：冒烟/用例 JSON 报告入库留证，覆盖率 XML 与临时输出不入库
+backend/.coverage
+docs/testing/reports/*.xml
+docs/testing/reports/*.txt

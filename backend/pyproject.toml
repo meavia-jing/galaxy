@@ -1,0 +1,57 @@
+# pytest / coverage 配置
+#
+# 运行方式（在 backend 目录）：
+#   ..\.venv\Scripts\python.exe -m pytest                    # 全量 + 覆盖率
+#   ..\.venv\Scripts\python.exe -m pytest -m "not concurrency"   # 快速回归
+#   ..\.venv\Scripts\python.exe -m pytest --reuse-db          # 复用测试库，提速
+#
+# 测试使用真实的 MariaDB 与 Django 测试库（默认 test_shop），不使用 SQLite，
+# 以保证行锁、事务隔离等行为与开发/生产环境一致。
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+pythonpath = ["."]
+testpaths = ["tests", "apps"]
+# tests.py 是 Django 默认的用例文件名，也纳入收集，避免两套运行器各跑一半
+python_files = ["test_*.py", "*_test.py", "tests.py"]
+python_classes = ["Test*", "*Tests", "*TestCase"]
+python_functions = ["test_*"]
+addopts = [
+    "-q",
+    "--strict-markers",
+    "--cov=apps",
+    "--cov=common",
+    "--cov-branch",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-report=xml",
+]
+markers = [
+    "concurrency: 需要 transactional_db 的多线程用例，较慢",
+    "slow: 单条耗时超过 2 秒",
+]
+log_cli = false
+
+[tool.coverage.run]
+source = ["apps", "common"]
+branch = true
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/__init__.py",
+    "manage.py",
+    "config/*",
+]
+
+[tool.coverage.report]
+skip_covered = true
+show_missing = true
+precision = 1
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+[tool.coverage.xml]
+output = "../docs/testing/reports/coverage.xml"

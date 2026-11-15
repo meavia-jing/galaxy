@@ -1,0 +1,5 @@
+# 测试专用依赖（不进入生产镜像）
+# 安装：.venv\Scripts\python.exe -m pip install -r backend/requirements-dev.txt
+pytest==8.3.4
+pytest-django==4.9.0
+pytest-cov==6.0.0
