@@ -1,4 +1,6 @@
 """Public catalog queries. Only on-shelf products are visible to everyone."""
+from decimal import Decimal
+
 from django.db.models import Min, Prefetch, Q
 from django.db.models.functions import Coalesce
 
@@ -38,10 +40,12 @@ def product_list(*, category_slug: str = "", keyword: str = "", sort: str = "new
         )
 
     if sort in {"price_asc", "price_desc"}:
+        # 兜底值必须是 Decimal：Coalesce 不接受 DecimalField 与 IntegerField 混用，
+        # 否则 price_asc/price_desc 会抛 FieldError 变成 500。
         qs = qs.annotate(
             price_min=Coalesce(
                 Min("skus__price", filter=Q(skus__is_active=True)),
-                0,
+                Decimal("0.00"),
             )
         )
     ordering = SORT_WHITELIST.get(sort, SORT_WHITELIST["newest"])
