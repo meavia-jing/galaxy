@@ -98,6 +98,43 @@ def test_cache_invalidation_is_safe_when_cache_is_down():
     assert invalidate_cms_cache() is None
 
 
+def test_400_envelope(api_client):
+    """[INT-ERR-01][I01-T03] 400 信封含 code/message/fields 与 request_id。"""
+    response = api_client.get("/api/v1/products/", {"sort": "not-allowed"})
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["error"]["code"] == "INVALID_SORT"
+    assert body["error"]["message"]
+    assert body["request_id"] == response["X-Request-ID"]
+
+
+def test_401_envelope(api_client):
+    """[INT-ERR-02][I01-T03] 未登录访问受保护接口返回 401 信封。"""
+    response = api_client.get("/api/v1/users/me/")
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "UNAUTHORIZED"
+
+
+def test_403_envelope(api_client):
+    """[INT-ERR-03][I01-T03] 缺少 CSRF 头返回 403 CSRF_FAILED 信封。"""
+    response = api_client.post("/api/v1/auth/refresh/", {}, format="json")
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "CSRF_FAILED"
+
+
+def test_404_envelope(api_client):
+    """[INT-ERR-04][I01-T03] 不存在的商品返回 404 NOT_FOUND 信封。"""
+    response = api_client.get("/api/v1/products/999999/")
+
+    assert response.status_code == 404
+    body = response.json()
+    assert body["error"]["code"] == "NOT_FOUND"
+    assert body["request_id"]
+
+
 def test_unhandled_exception_returns_envelope(api_client, monkeypatch):
     """[INT-ERR-06][I01-T03] 未捕获异常返回 500 信封，不泄露栈与文件路径。"""
     monkeypatch.setattr(
