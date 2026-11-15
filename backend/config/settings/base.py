@@ -59,6 +59,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "common.middleware.RequestIDMiddleware",
+    "common.middleware.EnvelopeErrorMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -162,7 +163,7 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "common.exceptions.api_exception_handler",
     "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.ScopedRateThrottle",
+        "common.throttling.ResilientScopedRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
         "auth_ip": "30/min",

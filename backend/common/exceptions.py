@@ -4,19 +4,12 @@ import logging
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied as DjangoPermissionDenied
 from django.http import Http404
 from rest_framework import exceptions, status
+from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
-logger = logging.getLogger(__name__)
+from .errors import DEFAULT_CODES, is_dependency_failure
 
-DEFAULT_CODES = {
-    status.HTTP_400_BAD_REQUEST: ("INVALID_REQUEST", "请求参数不正确"),
-    status.HTTP_401_UNAUTHORIZED: ("UNAUTHORIZED", "请先登录"),
-    status.HTTP_403_FORBIDDEN: ("FORBIDDEN", "没有操作权限"),
-    status.HTTP_404_NOT_FOUND: ("NOT_FOUND", "资源不存在"),
-    status.HTTP_409_CONFLICT: ("CONFLICT", "状态冲突"),
-    status.HTTP_429_TOO_MANY_REQUESTS: ("RATE_LIMITED", "请求过于频繁，请稍后再试"),
-    status.HTTP_503_SERVICE_UNAVAILABLE: ("DEPENDENCY_UNAVAILABLE", "依赖服务暂不可用"),
-}
+logger = logging.getLogger(__name__)
 
 FIELD_MSG = "该字段不合法"
 
@@ -67,8 +60,27 @@ def api_exception_handler(exc, context):
     request_id = getattr(context.get("request"), "request_id", "-")
 
     if response is None:
-        logger.exception("unhandled API error request_id=%s", request_id)
-        return None
+        # Unhandled exceptions must still honour the API contract: JSON envelope,
+        # no traceback. A dead dependency maps to 503, everything else to 500.
+        status_code = (
+            status.HTTP_503_SERVICE_UNAVAILABLE
+            if is_dependency_failure(exc)
+            else status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+        code, message = DEFAULT_CODES[status_code]
+        logger.exception(
+            "unhandled API error request_id=%s status=%s exc=%r",
+            request_id,
+            status_code,
+            exc,
+        )
+        return Response(
+            {
+                "error": {"code": code, "message": message, "fields": {}},
+                "request_id": request_id,
+            },
+            status=status_code,
+        )
 
     code, default_message = DEFAULT_CODES.get(
         response.status_code,

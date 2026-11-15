@@ -1,11 +1,11 @@
 """Public catalog endpoints: categories, product list, product detail."""
-from django.core.cache import cache
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.cache import cache_delete, cached
 from common.exceptions import BusinessError
 
 from . import selectors
@@ -17,17 +17,18 @@ CATEGORY_CACHE_TTL = 60
 
 def invalidate_catalog_cache() -> None:
     """Called after any product/category write; short TTL is the safety net."""
-    cache.delete(CATEGORY_CACHE_KEY)
+    cache_delete(CATEGORY_CACHE_KEY)
 
 
 class CategoryListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        data = cache.get(CATEGORY_CACHE_KEY)
-        if data is None:
-            data = CategorySerializer(selectors.active_categories(), many=True).data
-            cache.set(CATEGORY_CACHE_KEY, data, CATEGORY_CACHE_TTL)
+        data = cached(
+            CATEGORY_CACHE_KEY,
+            CATEGORY_CACHE_TTL,
+            lambda: CategorySerializer(selectors.active_categories(), many=True).data,
+        )
         return Response(data)
 
 
