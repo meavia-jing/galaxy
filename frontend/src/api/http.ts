@@ -141,4 +141,10 @@ export async function apiPatch<T>(url: string, body: unknown): Promise<T> {
   return unwrap<T>(response.data)
 }
 
+/** 删除接口返回 204 无响应体，调用方按 `apiDelete<void>` 使用即可。 */
+export async function apiDelete<T = void>(url: string): Promise<T> {
+  const response = await http.delete(url)
+  return unwrap<T>(response.data)
+}
+
 export { refreshAccessToken }

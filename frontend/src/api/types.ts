@@ -73,6 +73,34 @@ export interface UserProfile {
   date_joined: string
 }
 
+/** 收货地址，字段与 `accounts.AddressSerializer` 对齐。 */
+export interface Address {
+  id: string
+  recipient: string
+  phone: string
+  province: string
+  city: string
+  district: string
+  detail: string
+  is_default: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type AddressPayload = Pick<
+  Address,
+  'recipient' | 'phone' | 'province' | 'city' | 'district' | 'detail' | 'is_default'
+>
+
+export const ADDRESS_FIELDS: Array<keyof AddressPayload> = [
+  'recipient',
+  'phone',
+  'province',
+  'city',
+  'district',
+  'detail',
+]
+
 export function formatPrice(value: string | number): string {
   const num = typeof value === 'number' ? value : Number.parseFloat(value || '0')
   // 后端返回空串或脏数据时回落到 0.00，避免界面上出现 ¥NaN

@@ -84,15 +84,16 @@ async function logout() {
       <p v-if="message" style="color: #12805c; font-size: 13px; margin: 0 0 12px">{{ message }}</p>
       <p v-if="error" class="error-text" style="margin: 0 0 12px">{{ error }}</p>
 
-      <div style="display: flex; gap: 10px">
+      <div style="display: flex; gap: 10px; flex-wrap: wrap">
         <button class="btn" type="button" :disabled="saving" @click="save">
           {{ saving ? '保存中…' : '保存资料' }}
         </button>
+        <RouterLink class="btn btn--ghost" :to="{ name: 'addresses' }">管理收货地址</RouterLink>
         <button class="btn btn--ghost" type="button" @click="logout">退出登录</button>
       </div>
 
       <div class="notice" style="margin-top: 22px">
-        地址管理、订单与交易记录将在 I04/I05 迭代开放；当前迭代仅包含资料编辑与登录态管理。
+        订单与交易记录将在 I04/I05 迭代开放；当前可用资料编辑、收货地址管理与登录态管理。
       </div>
     </div>
   </div>
