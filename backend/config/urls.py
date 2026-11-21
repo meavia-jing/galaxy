@@ -14,6 +14,7 @@ api_v1 = [
     path("users/", include("apps.accounts.user_urls")),
     path("", include("apps.accounts.address_urls")),
     path("", include("apps.catalog.urls")),
+    path("", include("apps.cart.urls")),
     path("", include("apps.cms.urls")),
 ]
 
