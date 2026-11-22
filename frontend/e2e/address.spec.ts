@@ -72,12 +72,13 @@ test.describe('地址管理链路', () => {
     await expect(page.getByText('还没有收货地址')).toBeVisible()
   })
 
-  test('[E2E-06][I02-T05] 390×844 视口下三个页面无横向滚动', async ({ page }) => {
+  test('[E2E-06][I02-T05] 390×844 视口下各页面无横向滚动', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     const username = uniqueUsername('mob')
     await registerViaUi(page, username, `MOB${username.slice(-4)}`)
 
-    for (const path of ['/', '/products', '/account/addresses']) {
+    // 含 /cart：购物车行在窄屏改为单列网格，是最容易撑破视口的页面之一。
+    for (const path of ['/', '/products', '/account/addresses', '/cart']) {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
       const overflow = await page.evaluate(
