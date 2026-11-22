@@ -28,6 +28,7 @@ async function handleLogout() {
       <nav class="nav">
         <RouterLink to="/">首页</RouterLink>
         <RouterLink to="/products">全部商品</RouterLink>
+        <RouterLink to="/cart">购物车</RouterLink>
         <RouterLink to="/pages/help">帮助中心</RouterLink>
       </nav>
 

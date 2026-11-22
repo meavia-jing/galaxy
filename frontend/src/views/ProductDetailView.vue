@@ -1,15 +1,26 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-import { apiGet } from '@/api/http'
+import { addToCart } from '@/api/cart'
+import { apiGet, ApiRequestError } from '@/api/http'
 import { formatPrice, type ProductDetail, type Sku } from '@/api/types'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{ id: string }>()
+
+const auth = useAuthStore()
+const route = useRoute()
+const router = useRouter()
 
 const product = ref<ProductDetail | null>(null)
 const selectedSkuId = ref('')
 const loading = ref(true)
 const error = ref('')
+const cartQuantity = ref(1)
+const adding = ref(false)
+const addError = ref('')
+const added = ref('')
 
 const selectedSku = computed<Sku | null>(
   () => product.value?.skus.find((sku) => sku.id === selectedSkuId.value) ?? null,
@@ -39,6 +50,38 @@ async function load() {
 }
 
 onMounted(load)
+
+function clampQuantity(): void {
+  const value = Number(cartQuantity.value)
+  const max = selectedSku.value?.stock_available ?? 1
+  // 前端先收敛到 1..min(99, 库存)，避免把明显非法值发给服务端；最终以服务端为准。
+  if (!Number.isFinite(value)) cartQuantity.value = 1
+  else cartQuantity.value = Math.min(Math.max(Math.trunc(value), 1), Math.min(99, Math.max(max, 1)))
+}
+
+async function addCurrentSku(): Promise<void> {
+  addError.value = ''
+  added.value = ''
+  if (!selectedSku.value) {
+    addError.value = '请先选择规格'
+    return
+  }
+  // 未登录先送去登录页，并带上回跳地址，避免加购动作凭空消失。
+  if (!auth.isLoggedIn) {
+    router.push({ name: 'login', query: { redirect: route.fullPath } })
+    return
+  }
+  clampQuantity()
+  adding.value = true
+  try {
+    await addToCart(selectedSku.value.id, cartQuantity.value)
+    added.value = `已加入购物车（${cartQuantity.value} 件）`
+  } catch (err) {
+    addError.value = err instanceof ApiRequestError ? err.message : '加入购物车失败，请稍后重试'
+  } finally {
+    adding.value = false
+  }
+}
 </script>
 
 <template>
@@ -109,12 +152,33 @@ onMounted(load)
           </div>
 
           <div class="notice" style="margin-top: 18px">
-            购物车与下单功能将在下一迭代（I04）开放；当前仅展示商品信息与规格价格。
+            下单与支付将在后续迭代（I04-T02/T03、I05）开放；当前可加入购物车，不会产生订单或扣款。
           </div>
 
-          <div style="display: flex; gap: 10px; margin-top: 18px">
-            <button class="btn" type="button" disabled>
-              {{ inStock ? '加入购物车（即将开放）' : '暂时缺货' }}
+          <div v-if="inStock" class="buy-row">
+            <label class="buy-row__qty">
+              <span>数量</span>
+              <input
+                v-model.number="cartQuantity"
+                class="input buy-row__input"
+                type="number"
+                min="1"
+                max="99"
+                aria-label="购买数量"
+                @blur="clampQuantity"
+              />
+            </label>
+          </div>
+
+          <p v-if="added" class="buy-message buy-message--ok" role="status">
+            {{ added }}
+            <RouterLink :to="{ name: 'cart' }" class="buy-message__link">去购物车结算</RouterLink>
+          </p>
+          <p v-if="addError" class="error-text buy-message" role="alert">{{ addError }}</p>
+
+          <div style="display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap">
+            <button class="btn" type="button" :disabled="adding || !inStock" @click="addCurrentSku">
+              {{ adding ? '加入中…' : inStock ? '加入购物车' : '暂时缺货' }}
             </button>
             <RouterLink to="/products" class="btn btn--ghost">继续逛逛</RouterLink>
           </div>
@@ -132,3 +196,37 @@ onMounted(load)
     </template>
   </div>
 </template>
+
+<style scoped>
+.buy-row {
+  margin-top: 16px;
+}
+
+.buy-row__qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.buy-row__input {
+  width: 88px;
+  height: 36px;
+  text-align: center;
+}
+
+.buy-message {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+.buy-message--ok {
+  color: #12805c;
+}
+
+.buy-message__link {
+  margin-left: 8px;
+  color: var(--brand);
+}
+</style>

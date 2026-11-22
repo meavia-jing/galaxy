@@ -16,6 +16,7 @@ export default defineConfig({
   timeout: 40_000,
   expect: { timeout: 8_000 },
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'report' }]],
+  globalSetup: './global-setup.ts',
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5173',
     channel: 'chrome',

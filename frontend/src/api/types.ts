@@ -106,3 +106,28 @@ export function formatPrice(value: string | number): string {
   // 后端返回空串或脏数据时回落到 0.00，避免界面上出现 ¥NaN
   return (Number.isFinite(num) ? num : 0).toFixed(2)
 }
+
+/** 购物车项，字段与 `cart.CartItemSerializer` 对齐。 */
+export interface CartItem {
+  id: string
+  sku_id: string
+  product_id: string
+  product_title: string
+  sku_code: string
+  attributes: Record<string, string>
+  unit_price: string
+  quantity: number
+  line_amount: string
+  selected: boolean
+  stock_available: number
+  available: boolean
+  unavailable_reason: string
+}
+
+/** `GET /api/v1/cart/` 的汇总体。小计一律由服务端计算。 */
+export interface CartSummary {
+  items: CartItem[]
+  selected_count: number
+  subtotal: string
+  has_unavailable: boolean
+}
