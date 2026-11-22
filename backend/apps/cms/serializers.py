@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from common.sanitizer import sanitize_html
+
 from .models import Banner, ContentPage
 
 
@@ -18,3 +20,9 @@ class ContentPageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContentPage
         fields = ["slug", "title", "body", "published_at"]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # 读侧再净一次：净化上线前入库的历史数据可能仍是原始 HTML。
+        data["body"] = sanitize_html(data.get("body", ""))
+        return data

@@ -1,6 +1,8 @@
 """CMS: banners and content pages (draft / published / withdrawn)."""
 from django.db import models
 
+from common.sanitizer import sanitize_html
+
 
 class PublishStatus(models.TextChoices):
     DRAFT = "draft", "草稿"
@@ -43,6 +45,11 @@ class ContentPage(models.Model):
         verbose_name = "内容页面"
         verbose_name_plural = "内容页面"
         ordering = ["slug"]
+
+    def save(self, *args, **kwargs):
+        # 单一收口点：后台、shell、脚本任何写入路径都过同一净化函数。
+        self.body = sanitize_html(self.body)
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return self.title
