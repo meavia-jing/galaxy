@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -19,7 +20,9 @@ def invalidate_cms_cache() -> None:
 
 class BannerListView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes: list = []
 
+    @extend_schema(responses=BannerSerializer(many=True), summary="启用中的轮播")
     def get(self, request):
         data = cached(
             BANNER_CACHE_KEY,
@@ -31,7 +34,9 @@ class BannerListView(APIView):
 
 class ContentPageDetailView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes: list = []
 
+    @extend_schema(responses=ContentPageSerializer, summary="已发布的单页")
     def get(self, request, slug: str):
         page = ContentPage.objects.filter(
             slug=slug, status=PublishStatus.PUBLISHED

@@ -75,3 +75,12 @@ class CartItemPatchSerializer(serializers.Serializer):
         if not attrs:
             raise serializers.ValidationError("请提供 quantity 或 selected")
         return attrs
+
+
+class CartSummarySerializer(serializers.Serializer):
+    """`GET /cart/` 的响应形态，供 OpenAPI 使用（不是 ModelSerializer）。"""
+
+    items = CartItemSerializer(many=True)
+    selected_count = serializers.IntegerField()
+    subtotal = serializers.DecimalField(max_digits=12, decimal_places=2)
+    has_unavailable = serializers.BooleanField()

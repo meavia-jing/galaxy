@@ -61,15 +61,15 @@ class ProductListSerializer(serializers.ModelSerializer):
         skus = [sku for sku in obj.skus.all() if sku.is_active]
         return skus
 
-    def get_price_min(self, obj):
+    def get_price_min(self, obj) -> str:
         skus = self._active_skus(obj)
         return str(min((sku.price for sku in skus), default="0.00"))
 
-    def get_price_max(self, obj):
+    def get_price_max(self, obj) -> str:
         skus = self._active_skus(obj)
         return str(max((sku.price for sku in skus), default="0.00"))
 
-    def get_cover_image(self, obj):
+    def get_cover_image(self, obj) -> str:
         images = list(obj.images.all())
         return images[0].path if images else ""
 
@@ -81,5 +81,5 @@ class ProductDetailSerializer(ProductListSerializer):
     class Meta(ProductListSerializer.Meta):
         fields = ProductListSerializer.Meta.fields + ["description", "images", "skus"]
 
-    def get_skus(self, obj):
+    def get_skus(self, obj) -> list:
         return SKUSerializer(self._active_skus(obj), many=True).data

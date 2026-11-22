@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>MCP 安装检查报告</title>
+<style>
+  :root {
+    --bg: #0e1014;
+    --panel: #161a21;
+    --panel2: #1b2029;
+    --line: #272d39;
+    --text: #e6eaf1;
+    --muted: #8d95a6;
+    --ok: #3fd18b;
+    --warn: #f3b544;
+    --accent: #6aa6ff;
+    --code-bg: #10141a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 48px 46px;
+    width: 100%;
+    min-height: 100vh;
+    background: radial-gradient(1200px 560px at 10% -8%, #1a2233 0%, var(--bg) 58%);
+    color: var(--text);
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 {
+    margin: 0 0 20px;
+    font-size: 27px;
+    font-weight: 680;
+    letter-spacing: .3px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  h1::before {
+    content: "";
+    display: inline-block;
+    width: 5px; height: 24px;
+    margin-right: 12px;
+    vertical-align: -3px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, var(--accent), var(--ok));
+  }
+  h2 {
+    margin: 32px 0 12px;
+    font-size: 17px;
+    font-weight: 650;
+    color: #f2f5fa;
+  }
+  h2::before {
+    content: "";
+    display: inline-block;
+    width: 4px; height: 15px;
+    margin-right: 9px;
+    vertical-align: -1px;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: .85;
+  }
+  h3 {
+    margin: 22px 0 9px;
+    font-size: 13.5px;
+    font-weight: 620;
+    color: var(--accent);
+    letter-spacing: .2px;
+  }
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    overflow: hidden;
+    margin: 10px 0 16px;
+  }
+  th, td {
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 12.6px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    background: #1d222b;
+    color: #9aa3b5;
+    font-weight: 620;
+    font-size: 11.8px;
+    letter-spacing: .4px;
+  }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) td { background: rgba(255,255,255,.012); }
+  td:first-child { white-space: nowrap; }
+  code {
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 11.6px;
+    background: var(--code-bg);
+    border: 1px solid #222833;
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: #b8c6e0;
+    white-space: nowrap;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-left: 3px solid #2f6fbf;
+    border-radius: 7px;
+    padding: 13px 16px;
+    margin: 10px 0 14px;
+    overflow-x: auto;
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 11.9px;
+    line-height: 1.72;
+    color: #c3cee2;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: inherit; color: inherit; }
+  blockquote {
+    margin: 10px 0 16px;
+    padding: 10px 15px;
+    border-left: 3px solid var(--warn);
+    background: rgba(243,181,68,.07);
+    border-radius: 0 7px 7px 0;
+    color: #c9d2e2;
+    font-size: 12.5px;
+  }
+  ul { margin: 8px 0 14px; padding-left: 20px; }
+  li { margin: 4px 0; }
+  li::marker { color: var(--accent); }
+  .tag {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 620;
+  }
+  .tag.ok { background: rgba(63,209,139,.14); color: var(--ok); }
+  .tag.warn { background: rgba(243,181,68,.14); color: var(--warn); }
+  .meta { color: var(--muted); }
+  .foot {
+    margin-top: 30px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 11.5px;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<h1>MCP 安装检查报告</h1>
+
+<table>
+  <tbody>
+    <tr><td><b>执行时间</b></td><td>2026-11-14 23:00–23:55 (UTC+8)</td></tr>
+    <tr><td><b>执行环境</b></td><td>Windows 11 (10.0.26200) / Node v24.14.0 / npm 11.9.0 / uv 0.9 / Python 3.12.10</td></tr>
+    <tr><td><b>配置文件</b></td><td><code>C:\Users\zhang\.cursor\mcp.json</code>（用户级，所有工作区生效）</td></tr>
+    <tr><td><b>检查工具</b></td><td><code>scripts/mcp-check.mjs</code>（JSON-RPC 握手 + <code>tools/list</code>）、<code>scripts/mcp-smoke.mjs</code>（真实 <code>tools/call</code>）</td></tr>
+    <tr><td><b>状态看板</b></td><td><code>docs/mcp-status.html</code>（可复用的可视化页面）</td></tr>
+    <tr><td><b>结论</b></td><td>8 项需求中 7 项可用（含内置 computer use 与改用系统 Chrome 的 playwright），2 项已配置但因本机缺少宿主软件待启用</td></tr>
+  </tbody>
+</table>
+
+<h2>1. 安装清单</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>需求</th><th>实际包 / 来源</th><th>版本</th><th>启动命令</th><th>Cursor 命名空间</th><th>状态</th><th>工具数</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>windows-cli</b></td>
+      <td><code>@simonb97/server-win-cli</code> (npm)</td>
+      <td>0.2.1</td>
+      <td><code>npx -y @simonb97/server-win-cli</code></td>
+      <td><code>user-windows-cli</code></td>
+      <td><span class="tag ok">ready</span></td>
+      <td>9</td>
+    </tr>
+    <tr>
+      <td><b>redis</b></td>
+      <td><code>@modelcontextprotocol/server-redis</code> (npm)</td>
+      <td>最新</td>
+      <td><code>npx -y @modelcontextprotocol/server-redis redis://127.0.0.1:6379</code></td>
+      <td><code>user-redis</code></td>
+      <td><span class="tag ok">ready</span></td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <td><b>mysql</b></td>
+      <td><code>@benborla29/mcp-server-mysql</code> (npm)</td>
+      <td>2.0.9</td>
+      <td><code>npx -y @benborla29/mcp-server-mysql</code></td>
+      <td><code>user-mysql</code></td>
+      <td><span class="tag ok">ready</span></td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td><b>playwright</b></td>
+      <td><code>@playwright/mcp</code> (npm)</td>
+      <td>0.0.85</td>
+      <td><code>npx -y @playwright/mcp@latest --isolated --browser chrome</code></td>
+      <td><code>user-playwright</code></td>
+      <td><span class="tag ok">ready</span>（需重连后生效）</td>
+      <td>25</td>
+    </tr>
+    <tr>
+      <td><b>computer use</b></td>
+      <td>Cursor 内置（无外部进程）</td>
+      <td>—</td>
+      <td>无需配置</td>
+      <td><code>cursor-computer-use</code></td>
+      <td><span class="tag ok">ready</span></td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <td><b>Chrome DevTools mcp</b></td>
+      <td><code>chrome-devtools-mcp</code> (npm)</td>
+      <td>1.13.0</td>
+      <td><code>npx -y chrome-devtools-mcp@latest --isolated</code></td>
+      <td><code>user-chrome-devtools</code></td>
+      <td><span class="tag ok">ready</span></td>
+      <td>33</td>
+    </tr>
+    <tr>
+      <td><b>godot</b></td>
+      <td><code>@coding-solo/godot-mcp</code> (npm)</td>
+      <td>0.1.1</td>
+      <td><code>npx -y @coding-solo/godot-mcp</code></td>
+      <td><code>user-godot</code></td>
+      <td><span class="tag warn">ready</span>（宿主 Godot 未安装）</td>
+      <td>14</td>
+    </tr>
+    <tr>
+      <td><b>blender</b></td>
+      <td><code>mcp-for-blender</code> (PyPI，原 <code>blender-mcp</code>)</td>
+      <td>最新</td>
+      <td><code>uvx mcp-for-blender</code></td>
+      <td><code>user-blender</code></td>
+      <td><span class="tag warn">ready</span>（宿主 Blender 未安装）</td>
+      <td>10</td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>Cursor 侧工具数与脚本直连略有差异：Cursor 会额外注入 <code>mcp_auth</code> 等包装工具，因此 <code>user-*</code> 命名空间的工具数比服务自身多 1–2 个。</blockquote>
+
+<h2>2. 验证证据</h2>
+
+<h3>2.1 握手 + 工具枚举（<code>node scripts/mcp-check.mjs</code>）</h3>
+<pre><code>检查 windows-cli ... OK  9 个工具   用时 3.7s
+检查 redis ...       OK  4 个工具   用时 5.5s
+检查 mysql ...       OK  1 个工具   用时 4.6s
+检查 blender ...     OK 10 个工具   用时 14.1s
+检查 godot ...       OK 14 个工具   用时 4.2s
+检查 chrome-devtools ... OK 33 个工具  用时 5.6s
+检查 playwright ...  OK 25 个工具   用时 4.0s
+合计 7 个，成功 7 个，失败 0 个</code></pre>
+
+<h3>2.2 真实工具调用（<code>node scripts/mcp-smoke.mjs</code>）</h3>
+<pre><code>=== redis: 调用成功 ===
+id=10 isError=false -&gt; Successfully set key: mcp:check
+id=11 isError=false -&gt; ok-2026
+
+=== mysql: 调用成功 ===
+id=20 isError=false -&gt; [{ "products": 8 }] Query execution time: 2.78 ms
+
+=== playwright: 调用成功 ===
+id=30 isError=false -&gt; await page.goto('http://127.0.0.1:5173/');
+                       Page URL: http://127.0.0.1:5173/
+                       Page Title: 云集商城 · 在线电商演示</code></pre>
+
+<p>Playwright 真正启动了 Chrome 并打开了本项目前台首页，说明浏览器链路可用。</p>
+
+<h3>2.3 通过 Cursor 自身通道调用（端到端）</h3>
+<table>
+  <thead><tr><th>命名空间</th><th>调用</th><th>返回</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>user-mysql</code></td>
+      <td><code>mysql_query</code>: <code>SELECT VERSION(), COUNT(catalog_product), COUNT(accounts_address)</code></td>
+      <td><code>13.0.2-MariaDB, products=8, addresses=2</code>，耗时 4.89 ms</td>
+    </tr>
+    <tr>
+      <td><code>user-redis</code></td>
+      <td><code>get mcp:check</code></td>
+      <td><code>ok-2026</code></td>
+    </tr>
+    <tr>
+      <td><code>cursor-computer-use</code></td>
+      <td><code>computer_screenshot</code></td>
+      <td>成功捕获 1920×1080 主屏（见 <code>docs/screenshots/07-mcp-computer-use.png</code>）</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>2.4 命名空间状态（Cursor 工具目录）</h3>
+<pre><code>user-blender          tools=17  status=ready
+user-chrome-devtools  tools=35  status=ready
+user-godot            tools=16  status=ready
+user-mysql            tools=3   status=ready
+user-playwright       tools=27  status=ready
+user-redis            tools=6   status=ready
+user-windows-cli      tools=11  status=ready</code></pre>
+
+<h2>3. 遇到的问题与处理</h2>
+<table>
+  <thead><tr><th>问题</th><th>现象</th><th>处理</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b>PyPI 版 redis MCP 不可用</b></td>
+      <td><code>uvx mcp-server-redis</code> 报 <code>ModuleNotFoundError: No module named 'mcp.server.fastmcp'</code>（mcp 2.x 已把 FastMCP 改为 MCPServer）</td>
+      <td>改用官方 npm 包 <code>@modelcontextprotocol/server-redis</code>，URL 作为位置参数传入</td>
+    </tr>
+    <tr>
+      <td><b>同上，加固版仍缺环境变量</b></td>
+      <td>加 <code>--with "mcp&lt;2"</code> 后报 <code>REDIS_PASSWORD: Field required</code>，而本机 Redis 无密码</td>
+      <td>不再使用该包，避免为无密码实例传假密码</td>
+    </tr>
+    <tr>
+      <td><b>blender-mcp 改名</b></td>
+      <td><code>uvx blender-mcp</code> 提示 <code>blender-mcp is now mcp-for-blender</code></td>
+      <td>配置改为 <code>uvx mcp-for-blender</code></td>
+    </tr>
+    <tr>
+      <td><b>Playwright 浏览器版本不匹配</b></td>
+      <td>本机 <code>ms-playwright</code> 为 chromium v1234，<code>@playwright/mcp@latest</code> 需要 v1255，直接启动会报可执行文件缺失</td>
+      <td>放弃下载（实测代理下 15 分钟只下到 0.8 MB），改用本机已安装的 Chrome：追加 <code>--browser chrome</code>，并以 <code>--isolated</code> 隔离用户配置。实测已成功打开本项目首页</td>
+    </tr>
+    <tr>
+      <td><b>Godot 未安装</b></td>
+      <td>服务启动时报 <code>Could not find Godot in common locations for win32</code></td>
+      <td>服务仍可 <code>ready</code>（工具可列出），实际执行需安装 Godot 4 并修正 <code>GODOT_PATH</code></td>
+    </tr>
+    <tr>
+      <td><b>Blender 未安装</b></td>
+      <td>工具可列出，但 <code>get_addon_status</code>/<code>execute_blender_code</code> 需要 Blender 内运行官方插件</td>
+      <td>建议安装 Blender 4.x 后启用 MCP 插件再使用</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>4. 使用说明</h2>
+<ul>
+  <li>配置示例见仓库 <code>docs/mcp.example.json</code>；本机实际配置在 <code>C:\Users\zhang\.cursor\mcp.json</code>。</li>
+  <li>修改 <code>mcp.json</code> 后需要在 Cursor 的 MCP 面板点重连（或重启窗口），命名空间才会用新参数重启。本次改完 <code>playwright</code> 参数后，<code>user-playwright</code> 曾短暂报 <code>Not connected</code>，属预期，重连即可。</li>
+  <li>MySQL 连接使用项目专用账号 <code>shop</code>（仅 <code>shop</code> 库权限），并关闭 DELETE：<code>ALLOW_DELETE_OPERATION=false</code>。</li>
+  <li>Playwright 用系统 Chrome（<code>--browser chrome</code>），无需另外下载 chromium。</li>
+  <li>自检命令（任意目录）：</li>
+</ul>
+
+<pre><code>node D:\myProject\scripts\mcp-check.mjs          # 全部
+node D:\myProject\scripts\mcp-check.mjs redis    # 单个
+node D:\myProject\scripts\mcp-smoke.mjs          # 真实调用</code></pre>
+
+<ul>
+  <li>Playwright 运行会在工作目录生成 <code>.playwright-mcp/</code> 快照，已加入 <code>.gitignore</code>。</li>
+</ul>
+
+<h2>5. 安全边界</h2>
+<ul>
+  <li><code>windows-cli</code> 限制了可访问目录（<code>D:\myProject</code>、<code>C:\Users\zhang</code>），命令超时 60 秒。</li>
+  <li><code>mysql</code> 账号只授予 <code>shop.*</code>，且 MCP 侧禁用删除操作。</li>
+  <li><code>playwright</code> / <code>chrome-devtools</code> 使用 <code>--isolated</code>，不接管用户日常浏览器配置。</li>
+  <li>配置文件中包含本地数据库口令，位于用户目录，不随仓库提交。</li>
+</ul>
+
+<div class="foot">
+  <span>云集商城 · Galaxy 项目 · MCP 安装检查报告</span>
+  <span class="meta">7 / 8 可用 · 0 失败 · 复检：node scripts/mcp-check.mjs</span>
+</div>
+
+</body>
+</html>

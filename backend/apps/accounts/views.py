@@ -3,7 +3,8 @@ from django.conf import settings
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
-from rest_framework import status
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -17,7 +18,10 @@ from common.exceptions import BusinessError
 from .models import Address
 from .serializers import (
     AddressSerializer,
+    AuthResultSerializer,
     ChangePasswordSerializer,
+    CsrfResultSerializer,
+    LogoutResultSerializer,
     ProfileSerializer,
     RegisterSerializer,
     UserSerializer,
@@ -60,6 +64,11 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = "register_ip"
 
+    @extend_schema(
+        request=RegisterSerializer,
+        responses={201: AuthResultSerializer},
+        summary="注册并直接签发 access token（refresh 走 HttpOnly Cookie）",
+    )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -94,6 +103,11 @@ class RefreshView(APIView):
     permission_classes = [AllowAny]
     authentication_classes: list = []
 
+    @extend_schema(
+        request=None,
+        responses={200: AuthResultSerializer},
+        summary="用 HttpOnly refresh Cookie 轮换 access token（需 CSRF 头）",
+    )
     def post(self, request):
         _require_csrf(request)
         raw = request.COOKIES.get(REFRESH_COOKIE, "")
@@ -124,6 +138,11 @@ class LogoutView(APIView):
     permission_classes = [AllowAny]
     authentication_classes: list = []
 
+    @extend_schema(
+        request=None,
+        responses={200: LogoutResultSerializer},
+        summary="黑名单 refresh token 并提升 auth_version（全端下线）",
+    )
     def post(self, request):
         _require_csrf(request)
         raw = request.COOKIES.get(REFRESH_COOKIE, "")
@@ -151,7 +170,9 @@ class LogoutView(APIView):
 
 class CsrfTokenView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes: list = []
 
+    @extend_schema(responses=CsrfResultSerializer, summary="下发 csrftoken Cookie")
     @method_decorator(ensure_csrf_cookie)
     def get(self, request):
         return Response({"csrf_token": get_token(request)})
@@ -160,9 +181,12 @@ class CsrfTokenView(APIView):
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses=UserSerializer, summary="当前登录用户")
     def get(self, request):
         return Response(UserSerializer(request.user).data)
 
+    @extend_schema(request=ProfileSerializer, responses=UserSerializer,
+                   summary="修改昵称/邮箱（role 与 is_active 不可改）")
     def patch(self, request):
         serializer = ProfileSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -173,6 +197,11 @@ class MeView(APIView):
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=ChangePasswordSerializer,
+        responses={200: AuthResultSerializer},
+        summary="修改密码：成功后提升 auth_version 并换发新会话",
+    )
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -197,6 +226,8 @@ class AddressViewSet(ModelViewSet):
     serializer_class = AddressSerializer
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     pagination_class = None
+    # 仅供 OpenAPI 推断模型与路径参数类型；真实查询由 get_queryset 按当前用户过滤。
+    queryset = Address.objects.none()
 
     def get_queryset(self):
         return Address.objects.filter(user=self.request.user)

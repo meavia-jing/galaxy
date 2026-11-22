@@ -56,3 +56,7 @@ class DatabaseBackedJWTAuthentication(authentication.BaseAuthentication):
                 raise exceptions.AuthenticationFailed("登录状态已失效，请重新登录")
 
         return (user, token)
+
+
+# 导入即注册 OpenAPI 安全方案（drf-spectacular 靠 import 副作用收集扩展）。
+from . import schema  # noqa: E402,F401

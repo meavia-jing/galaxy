@@ -77,6 +77,21 @@ class ChangePasswordSerializer(serializers.Serializer):
         return value
 
 
+class AuthResultSerializer(serializers.Serializer):
+    """登录/注册/刷新/改密的统一响应体；refresh 不进 body，只走 HttpOnly Cookie。"""
+
+    access = serializers.CharField()
+    user = UserSerializer()
+
+
+class LogoutResultSerializer(serializers.Serializer):
+    logged_out = serializers.BooleanField()
+
+
+class CsrfResultSerializer(serializers.Serializer):
+    csrf_token = serializers.CharField()
+
+
 class AddressSerializer(serializers.ModelSerializer):
     """Address payload; ``user`` is always taken from the session, never the body."""
 

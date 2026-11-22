@@ -1,4 +1,5 @@
 """Public catalog endpoints: categories, product list, product detail."""
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
@@ -22,7 +23,10 @@ def invalidate_catalog_cache() -> None:
 
 class CategoryListView(APIView):
     permission_classes = [AllowAny]
+    # 公开端点显式清空认证类，否则 OpenAPI 会标成需要 Bearer（误导调用方）。
+    authentication_classes: list = []
 
+    @extend_schema(responses=CategorySerializer(many=True), summary="启用中的分类")
     def get(self, request):
         data = cached(
             CATEGORY_CACHE_KEY,
@@ -34,7 +38,24 @@ class CategoryListView(APIView):
 
 class ProductListView(ListAPIView):
     permission_classes = [AllowAny]
+    authentication_classes: list = []
     serializer_class = ProductListSerializer
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("category", str, description="分类 slug"),
+            OpenApiParameter("keyword", str, description="标题/副标题关键词"),
+            OpenApiParameter(
+                "sort",
+                str,
+                enum=sorted(selectors.SORT_WHITELIST),
+                description="排序白名单，非白名单值返回 400 INVALID_SORT",
+            ),
+        ],
+        summary="商品列表（分页上限 100）",
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
         params = self.request.query_params
@@ -52,7 +73,9 @@ class ProductListView(ListAPIView):
 
 class ProductDetailView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes: list = []
 
+    @extend_schema(responses=ProductDetailSerializer, summary="商品详情")
     def get(self, request, pk: int):
         product = selectors.product_detail(pk)
         if product is None:

@@ -6,6 +6,7 @@ DRF 的默认 create/update 会绕过这些规则。
 from decimal import Decimal
 from typing import Any
 
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.mixins import DestroyModelMixin, ListModelMixin
 from rest_framework.permissions import IsAuthenticated
@@ -15,7 +16,12 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
 from .models import CartItem
-from .serializers import CartItemPatchSerializer, CartItemSerializer, CartItemWriteSerializer
+from .serializers import (
+    CartItemPatchSerializer,
+    CartItemSerializer,
+    CartItemWriteSerializer,
+    CartSummarySerializer,
+)
 from .services import patch_item, put_item, remove_item
 
 
@@ -25,10 +31,14 @@ class CartItemViewSet(ListModelMixin, DestroyModelMixin, GenericViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = CartItemSerializer
     pagination_class = None
+    # 仅用于 OpenAPI 推断模型；真实查询由 get_queryset 按当前用户过滤。
+    queryset = CartItem.objects.none()
 
     def get_queryset(self):
         return CartItem.objects.filter(user=self.request.user).select_related("sku", "sku__product")
 
+    @extend_schema(request=CartItemWriteSerializer, responses=CartItemSerializer,
+                   summary="加入购物车：同 SKU 合并为一行，数量为设定值")
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         payload = CartItemWriteSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
@@ -42,6 +52,8 @@ class CartItemViewSet(ListModelMixin, DestroyModelMixin, GenericViewSet):
         body = CartItemSerializer(item, context=self.get_serializer_context()).data
         return Response(body, status=status.HTTP_201_CREATED)
 
+    @extend_schema(request=CartItemPatchSerializer, responses=CartItemSerializer,
+                   summary="修改数量或勾选（不校验商品状态，只校验库存与数量范围）")
     def partial_update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         payload = CartItemPatchSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
@@ -64,6 +76,7 @@ class CartSummaryView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses=CartSummarySerializer, summary="购物车汇总：服务端计算小计")
     def get(self, request: Request) -> Response:
         items = CartItemSerializer(
             CartItem.objects.filter(user=request.user).select_related("sku", "sku__product"),

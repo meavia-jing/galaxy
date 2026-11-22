@@ -8,6 +8,8 @@ python-dotenv==1.0.1
 redis==5.2.1
 # 数据库驱动：mysqlclient 需要 C 编译器；Windows 无编译环境时用 PyMySQL
 # （已在本机锁定 PyMySQL）。生产 Ubuntu 建议安装 mysqlclient。
-PyMySQL==1.4.6
+# 注意：1.4.6 在 PyPI 并不存在，本地 venv 实测为 1.1.1；此前写错导致干净机器
+# 按 requirements.txt 安装直接失败（I01-T04 真机验证时暴露）。
+PyMySQL==1.1.1
 # 生产 WSGI 服务器，供 deploy/shop.service 使用
 gunicorn==23.0.0
