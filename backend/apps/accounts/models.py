@@ -97,6 +97,41 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.refresh_from_db(fields=["auth_version"])
 
 
+class AuditLog(models.Model):
+    """只追加的审计记录：谁在何时对哪个资源做了什么。
+
+    ``changes`` 必须是脱敏后的字段差异（例如密码记为 ``***``），
+    不允许写入明文密码、令牌或完整地址。后台只读，不提供编辑/删除入口。
+    """
+
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="audit_logs",
+        verbose_name="操作人",
+    )
+    action = models.CharField("动作", max_length=64)
+    resource_type = models.CharField("资源类型", max_length=64)
+    resource_id = models.CharField("资源 ID", max_length=64)
+    request_id = models.CharField("请求 ID", max_length=64, blank=True, default="")
+    changes = models.JSONField("脱敏变更", default=dict, blank=True)
+    created_at = models.DateTimeField("创建时间", auto_now_add=True)
+
+    class Meta:
+        db_table = "accounts_audit_log"
+        verbose_name = "审计日志"
+        verbose_name_plural = "审计日志"
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["actor", "created_at"], name="audit_actor_created_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.action} {self.resource_type}#{self.resource_id}"
+
+
 class Address(models.Model):
     """收货地址。
 

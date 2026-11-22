@@ -121,12 +121,35 @@ def section(path: str, title: str, start: int, end: int) -> str:
     return f"<div class='doc'><h1>{html.escape(title)}</h1>{md(chunk)}</div>"
 
 
+def heading_line(path: str, prefix: str) -> int:
+    """返回首个以 prefix 开头的标题行号（1 起始）。找不到即报错，避免静默截错。"""
+    for index, line in enumerate((ROOT / path).read_text(encoding="utf-8").splitlines(), 1):
+        if line.startswith(prefix):
+            return index
+    raise SystemExit(f"{path} 中找不到标题：{prefix}")
+
+
+def section_between(path: str, from_heading: str, to_heading: str, title: str) -> str:
+    """渲染 from_heading 起、到 to_heading 前一行止的真实文档片段。"""
+    start = heading_line(path, from_heading)
+    end = heading_line(path, to_heading) - 1
+    return section(path, title, start, end)
+
+
 def run(cmd: list[str]) -> str:
     out = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
     return (out.stdout or "").strip()
 
 
 def git_snapshot() -> str:
+    annotate = []
+    for tag in ("baseline-004", "baseline-005"):
+        annotate.append(
+            (
+                f'PS> git tag -l -n99 {tag}',
+                run(["git", "tag", "-l", "-n99", tag]),
+            )
+        )
     blocks = [
         (
             'PS> git tag -l "baseline-*" --format="%(refname:short)  %(objectname:short)  '
@@ -137,7 +160,7 @@ def git_snapshot() -> str:
             ]),
         ),
         ("PS> git describe --tags", run(["git", "describe", "--tags"])),
-        ("PS> git tag -l -n99 baseline-003", run(["git", "tag", "-l", "-n99", "baseline-003"])),
+        *annotate,
         (
             "PS> git ls-remote --tags origin | Select-String baseline",
             "\n".join(
@@ -154,10 +177,25 @@ def git_snapshot() -> str:
     return "\n".join(parts)
 
 
+ITER_NAMES = {
+    "I01": "I01 基础框架与直接部署",
+    "I02": "I02 注册登录与用户中心",
+    "I03": "I03 商品展示与 CMS",
+    "I04": "I04 购物车与订单创建",
+    "I05": "I05 模拟支付与订单履约",
+    "I06": "I06 优惠券",
+    "I07": "I07 站内通知",
+    "I08": "I08 用户评价",
+    "I09": "I09 客服对话",
+    "I10": "I10 全量验证与交付审核",
+}
+
+
 def iter_table() -> str:
     """从迭代计划文档 §15 的台账实时统计各迭代任务状态，不写死数字。"""
     text = (ROOT / "迭代计划文档.md").read_text(encoding="utf-8")
     counts: dict[str, dict[str, int]] = {}
+    seen: set[str] = set()
     for line in text.splitlines():
         if not line.startswith("|"):
             continue
@@ -165,54 +203,67 @@ def iter_table() -> str:
         if len(cells) < 3 or not cells[1].startswith("I"):
             continue
         mark, task = cells[0], cells[1]
+        if task in seen:  # §14.3 台账与 §15 都出现同一任务号时只计一次
+            continue
+        seen.add(task)
         it = task.split("-")[0]
-        if it not in {"I01", "I02", "I03", "I04"}:
+        if it not in ITER_NAMES:
             continue
         slot = counts.setdefault(it, {"✅": 0, "🚧": 0, "⬜": 0})
         if mark in slot:
             slot[mark] += 1
 
-    names = {
-        "I01": "I01 基础框架与直接部署",
-        "I02": "I02 注册登录与用户中心",
-        "I03": "I03 商品展示与 CMS",
-        "I04": "I04 购物车与订单创建",
-    }
-    rows = ["| 迭代 | 任务数 | 已交付 | 部分交付 | 未开始 | 是否闭合 |", "| --- | --- | --- | --- | --- | --- |"]
+    rows = [
+        "| 迭代 | 任务数 | 已交付 | 部分交付 | 未开始 | 是否闭合 |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ]
     total = {"✅": 0, "🚧": 0, "⬜": 0}
-    for it, name in names.items():
-        c = counts.get(it, {"✅": 0, "🚧": 0, "⬜": 0})
+    tasks_total = 0
+    closed = 0
+    for it, name in ITER_NAMES.items():
+        c = counts.get(it)
+        if not c:
+            continue
+        is_closed = not c["🚧"] and not c["⬜"] and c["✅"] > 0
+        if is_closed:
+            closed += 1
+        tasks_total += sum(c.values())
         for k in total:
             total[k] += c[k]
-        closed = "**否**" if c["🚧"] or c["⬜"] else "是"
         rows.append(
-            f"| {name} | 5 | {c['✅']} | {c['🚧']} | {c['⬜']} | {closed} |"
+            f"| {name} | {sum(c.values())} | {c['✅']} | {c['🚧']} | {c['⬜']} | "
+            f"{'**是**' if is_closed else '否'} |"
         )
     rows.append(
-        f"| **合计** | **20** | **{total['✅']}** | **{total['🚧']}** | **{total['⬜']}** | **闭合 0 个** |"
+        f"| **合计** | **{tasks_total}** | **{total['✅']}** | **{total['🚧']}** | "
+        f"**{total['⬜']}** | **闭合 {closed} 个** |"
     )
     return "\n".join(rows)
 
 
 def main() -> None:
-    # 1 迭代计划
+    # 1 迭代计划：头部（到 §1 之前）+ §15 全节
     plan_lines = (ROOT / "迭代计划文档.md").read_text(encoding="utf-8").splitlines()
     body = meta("迭代计划文档.md", f"渲染自仓库真实文件（共 {len(plan_lines)} 行），未改写任何内容")
-    body += section("迭代计划文档.md", "迭代计划文档.md　头部与基线声明", 1, 10)
-    body += section("迭代计划文档.md", "§15 任务进度总表", 236, len(plan_lines))
+    body += section("迭代计划文档.md", "迭代计划文档.md　头部与基线声明",
+                    1, heading_line("迭代计划文档.md", "## 1 ") - 1)
+    body += section("迭代计划文档.md", "§15 任务进度总表", heading_line("迭代计划文档.md", "## 15 "), len(plan_lines))
     (OUT / "01-迭代计划.html").write_text(styled("迭代计划", body), encoding="utf-8")
 
-    # 2 交接文档
-    body = meta("docs/交接文档.md", "渲染自仓库真实文件（§1 概况 + §2 完成情况 + §3 进度汇总）")
-    body += section("docs/交接文档.md", "docs/交接文档.md　§1 项目概况", 1, 21)
-    body += section("docs/交接文档.md", "§2 完成情况总表", 22, 76)
-    body += section("docs/交接文档.md", "§3 进度汇总", 77, 92)
+    # 2 交接文档：§1 概况 + §2 完成情况 + §3 进度汇总（按标题定位，避免行号漂移）
+    handoff = "docs/交接文档.md"
+    body = meta(handoff, "渲染自仓库真实文件（§1 概况 + §2 完成情况 + §3 进度汇总）")
+    body += section_between(handoff, "## 1 ", "## 2 ", "docs/交接文档.md　§1 项目概况")
+    body += section_between(handoff, "## 2 ", "## 3 ", "§2 完成情况总表")
+    body += section_between(handoff, "## 3 ", "## 4 ", "§3 进度汇总")
     (OUT / "02-交接文档.html").write_text(styled("交接文档", body), encoding="utf-8")
 
-    # 3 基线标签
+    # 3 基线标签：§1 定义 + §3 清单
+    baselines = "docs/基线管理.md"
     body = meta("git 命令实况", "以下命令在本仓库实际执行，输出为原始结果")
     body += term("PowerShell — 仓库根", git_snapshot())
-    body += section("docs/基线管理.md", "docs/基线管理.md　§1 基线的定义与 §3 基线清单", 14, 40)
+    body += section_between(baselines, "## 1 ", "## 2 ", "docs/基线管理.md　§1 基线的定义")
+    body += section_between(baselines, "## 3 ", "### 3.1 ", "§3 基线清单")
     (OUT / "03-基线标签.html").write_text(styled("基线标签", body), encoding="utf-8")
 
     # 4 完成度自评
@@ -234,9 +285,12 @@ def main() -> None:
         "| --- | --- | --- |\n"
         "| `baseline-001` | I01-T01/T02、I02-T02/T04、I03-T02/T03 等混合 | 跨迭代补丁基线 |\n"
         "| `baseline-002` | I01-T03/T04、I02-T01/T04、I03-T05 等混合 | 跨迭代补丁基线 |\n"
-        "| `baseline-003` | 测试补齐 + 价格排序修复 + 备份校验 | 跨迭代补丁基线 |\n\n"
-        "> 三者都横跨 I01–I03，无法回答「I01 在第几个标签闭合」。"
-        "作业要求的形态是一迭代一标签。\n"
+        "| `baseline-003` | 测试补齐 + 价格排序修复 + 备份校验 | 跨迭代补丁基线 |\n"
+        "| `baseline-004` | I01-T03/T04/T05 全部转 ✅ | **迭代基线（I01 闭环）** |\n"
+        "| `baseline-005` | I02-T01/T03/T05 全部转 ✅ | **迭代基线（I02 闭环）** |\n\n"
+        "> BL-001~003 横跨 I01–I03，无法回答「I01 在第几个标签闭合」；"
+        "BL-004 与 BL-005 才是一迭代一标签的形态，已满足「两个完整迭代」。\n"
+        "> 但基线只证明 AI 侧交付与门禁齐全，**人工验收仍为 0 个任务**。\n"
     )
     body += "</div>"
     (OUT / "04-完成度.html").write_text(styled("作业完成度自评", body), encoding="utf-8")

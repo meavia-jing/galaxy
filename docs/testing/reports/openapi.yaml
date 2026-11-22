@@ -1,0 +1,1183 @@
+openapi: 3.0.3
+info:
+  title: Shop API
+  version: 1.0.0
+  description: 在线电商网站 API（模拟支付，不发生资金交易）
+paths:
+  /api/v1/addresses/:
+    get:
+      operationId: api_v1_addresses_list
+      description: CRUD for the caller's own addresses; other users' rows are invisible.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Address'
+          description: ''
+    post:
+      operationId: api_v1_addresses_create
+      description: CRUD for the caller's own addresses; other users' rows are invisible.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+  /api/v1/addresses/{id}/:
+    get:
+      operationId: api_v1_addresses_retrieve
+      description: CRUD for the caller's own addresses; other users' rows are invisible.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 收货地址.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    patch:
+      operationId: api_v1_addresses_partial_update
+      description: CRUD for the caller's own addresses; other users' rows are invisible.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 收货地址.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    delete:
+      operationId: api_v1_addresses_destroy
+      description: CRUD for the caller's own addresses; other users' rows are invisible.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 收货地址.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/csrf/:
+    get:
+      operationId: api_v1_auth_csrf_retrieve
+      summary: 下发 csrftoken Cookie
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsrfResult'
+          description: ''
+  /api/v1/auth/login/:
+    post:
+      operationId: api_v1_auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShopTokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ShopTokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ShopTokenObtainPairRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/logout/:
+    post:
+      operationId: api_v1_auth_logout_create
+      summary: 黑名单 refresh token 并提升 auth_version（全端下线）
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResult'
+          description: ''
+  /api/v1/auth/refresh/:
+    post:
+      operationId: api_v1_auth_refresh_create
+      summary: 用 HttpOnly refresh Cookie 轮换 access token（需 CSRF 头）
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResult'
+          description: ''
+  /api/v1/auth/register/:
+    post:
+      operationId: api_v1_auth_register_create
+      summary: 注册并直接签发 access token（refresh 走 HttpOnly Cookie）
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResult'
+          description: ''
+  /api/v1/banners/:
+    get:
+      operationId: api_v1_banners_list
+      summary: 启用中的轮播
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Banner'
+          description: ''
+  /api/v1/cart/:
+    get:
+      operationId: api_v1_cart_retrieve
+      description: GET /cart/ — 结算前汇总：可结算项小计 + 是否存在不可用项。
+      summary: 购物车汇总：服务端计算小计
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartSummary'
+          description: ''
+  /api/v1/cart-items/:
+    get:
+      operationId: api_v1_cart_items_list
+      description: GET/POST /cart-items/ 、PATCH/DELETE /cart-items/{id}/
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CartItem'
+          description: ''
+    post:
+      operationId: api_v1_cart_items_create
+      description: GET/POST /cart-items/ 、PATCH/DELETE /cart-items/{id}/
+      summary: 加入购物车：同 SKU 合并为一行，数量为设定值
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CartItemWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CartItemWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+          description: ''
+  /api/v1/cart-items/{id}/:
+    patch:
+      operationId: api_v1_cart_items_partial_update
+      description: GET/POST /cart-items/ 、PATCH/DELETE /cart-items/{id}/
+      summary: 修改数量或勾选（不校验商品状态，只校验库存与数量范围）
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 购物车项.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemPatchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemPatchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemPatchRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+          description: ''
+    delete:
+      operationId: api_v1_cart_items_destroy
+      description: GET/POST /cart-items/ 、PATCH/DELETE /cart-items/{id}/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 购物车项.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/categories/:
+    get:
+      operationId: api_v1_categories_list
+      summary: 启用中的分类
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+          description: ''
+  /api/v1/pages/{slug}/:
+    get:
+      operationId: api_v1_pages_retrieve
+      summary: 已发布的单页
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentPage'
+          description: ''
+  /api/v1/products/:
+    get:
+      operationId: api_v1_products_list
+      summary: 商品列表（分页上限 100）
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+        description: 分类 slug
+      - in: query
+        name: keyword
+        schema:
+          type: string
+        description: 标题/副标题关键词
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: sort
+        schema:
+          type: string
+          enum:
+          - newest
+          - oldest
+          - price_asc
+          - price_desc
+        description: 排序白名单，非白名单值返回 400 INVALID_SORT
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductListList'
+          description: ''
+  /api/v1/products/{id}/:
+    get:
+      operationId: api_v1_products_retrieve
+      summary: 商品详情
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+  /api/v1/users/me/:
+    get:
+      operationId: api_v1_users_me_retrieve
+      summary: 当前登录用户
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: api_v1_users_me_partial_update
+      summary: 修改昵称/邮箱（role 与 is_active 不可改）
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/users/me/change-password/:
+    post:
+      operationId: api_v1_users_me_change_password_create
+      summary: 修改密码：成功后提升 auth_version 并换发新会话
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResult'
+          description: ''
+  /health/live/:
+    get:
+      operationId: health_live_retrieve
+      summary: 存活探针：只代表进程在跑
+      tags:
+      - health
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Liveness'
+          description: ''
+  /health/ready/:
+    get:
+      operationId: health_ready_retrieve
+      summary: 就绪探针：数据库或缓存不可用时返回 503 degraded
+      tags:
+      - health
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
+          description: ''
+components:
+  schemas:
+    Address:
+      type: object
+      description: Address payload; ``user`` is always taken from the session, never
+        the body.
+      properties:
+        id:
+          type: string
+          readOnly: true
+        recipient:
+          type: string
+          maxLength: 50
+        phone:
+          type: string
+          title: 联系电话
+          pattern: ^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8})$
+          maxLength: 20
+        province:
+          type: string
+          maxLength: 50
+        city:
+          type: string
+          maxLength: 50
+        district:
+          type: string
+          maxLength: 50
+        detail:
+          type: string
+          maxLength: 200
+        is_default:
+          type: boolean
+          default: false
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 更新时间
+      required:
+      - city
+      - created_at
+      - detail
+      - district
+      - id
+      - phone
+      - province
+      - recipient
+      - updated_at
+    AddressRequest:
+      type: object
+      description: Address payload; ``user`` is always taken from the session, never
+        the body.
+      properties:
+        recipient:
+          type: string
+          minLength: 1
+          maxLength: 50
+        phone:
+          type: string
+          minLength: 1
+          title: 联系电话
+          pattern: ^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8})$
+          maxLength: 20
+        province:
+          type: string
+          minLength: 1
+          maxLength: 50
+        city:
+          type: string
+          minLength: 1
+          maxLength: 50
+        district:
+          type: string
+          minLength: 1
+          maxLength: 50
+        detail:
+          type: string
+          minLength: 1
+          maxLength: 200
+        is_default:
+          type: boolean
+          default: false
+      required:
+      - city
+      - detail
+      - district
+      - phone
+      - province
+      - recipient
+    AuthResult:
+      type: object
+      description: 登录/注册/刷新/改密的统一响应体；refresh 不进 body，只走 HttpOnly Cookie。
+      properties:
+        access:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+      - access
+      - user
+    Banner:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          title: 标题
+          maxLength: 120
+        image_path:
+          type: string
+          title: 图片地址
+          maxLength: 500
+        target_url:
+          type: string
+          title: 跳转链接
+          maxLength: 500
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          title: 排序
+      required:
+      - id
+      - image_path
+      - title
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        sku_id:
+          type: string
+          readOnly: true
+        product_id:
+          type: string
+          readOnly: true
+        product_title:
+          type: string
+          readOnly: true
+        sku_code:
+          type: string
+          readOnly: true
+        attributes:
+          readOnly: true
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        quantity:
+          type: integer
+          maximum: 99
+          minimum: 1
+          title: 数量
+        line_amount:
+          type: string
+          readOnly: true
+        selected:
+          type: boolean
+          title: 结算时勾选
+        stock_available:
+          type: integer
+          readOnly: true
+        available:
+          type: boolean
+          readOnly: true
+        unavailable_reason:
+          type: string
+          readOnly: true
+      required:
+      - attributes
+      - available
+      - id
+      - line_amount
+      - product_id
+      - product_title
+      - sku_code
+      - sku_id
+      - stock_available
+      - unavailable_reason
+      - unit_price
+    CartItemWriteRequest:
+      type: object
+      description: 写入载荷。数量下限/上限在服务层统一报 INVALID_QUANTITY，这里只做类型校验。
+      properties:
+        sku_id:
+          type: string
+          minLength: 1
+        quantity:
+          type: integer
+          minimum: 1
+        selected:
+          type: boolean
+          default: true
+      required:
+      - quantity
+      - sku_id
+    CartSummary:
+      type: object
+      description: '`GET /cart/` 的响应形态，供 OpenAPI 使用（不是 ModelSerializer）。'
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        selected_count:
+          type: integer
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        has_unavailable:
+          type: boolean
+      required:
+      - has_unavailable
+      - items
+      - selected_count
+      - subtotal
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          title: 名称
+          maxLength: 64
+        slug:
+          type: string
+          title: 标识
+          maxLength: 64
+          pattern: ^[-a-zA-Z0-9_]+$
+        parent_id:
+          type: integer
+          nullable: true
+          title: 上级分类
+          readOnly: true
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          title: 排序
+      required:
+      - id
+      - name
+      - parent_id
+      - slug
+    ChangePasswordRequest:
+      type: object
+      properties:
+        old_password:
+          type: string
+          minLength: 1
+          maxLength: 128
+        new_password:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+      - new_password
+      - old_password
+    ContentPage:
+      type: object
+      properties:
+        slug:
+          type: string
+          title: 标识
+          maxLength: 64
+          pattern: ^[-a-zA-Z0-9_]+$
+        title:
+          type: string
+          title: 标题
+          maxLength: 200
+        body:
+          type: string
+          title: 正文
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: 发布时间
+      required:
+      - slug
+      - title
+    CsrfResult:
+      type: object
+      properties:
+        csrf_token:
+          type: string
+      required:
+      - csrf_token
+    Liveness:
+      type: object
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+      required:
+      - service
+      - status
+    LogoutResult:
+      type: object
+      properties:
+        logged_out:
+          type: boolean
+      required:
+      - logged_out
+    PaginatedProductListList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductList'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+    PatchedAddressRequest:
+      type: object
+      description: Address payload; ``user`` is always taken from the session, never
+        the body.
+      properties:
+        recipient:
+          type: string
+          minLength: 1
+          maxLength: 50
+        phone:
+          type: string
+          minLength: 1
+          title: 联系电话
+          pattern: ^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8})$
+          maxLength: 20
+        province:
+          type: string
+          minLength: 1
+          maxLength: 50
+        city:
+          type: string
+          minLength: 1
+          maxLength: 50
+        district:
+          type: string
+          minLength: 1
+          maxLength: 50
+        detail:
+          type: string
+          minLength: 1
+          maxLength: 200
+        is_default:
+          type: boolean
+          default: false
+    PatchedCartItemPatchRequest:
+      type: object
+      properties:
+        quantity:
+          type: integer
+        selected:
+          type: boolean
+    PatchedProfileRequest:
+      type: object
+      description: Only whitelisted fields are writable; role/is_active are server-controlled.
+      properties:
+        nickname:
+          type: string
+          title: 昵称
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          title: 邮箱
+          maxLength: 254
+    ProductDetail:
+      type: object
+      description: Card payload for lists; price range and cover are computed from
+        prefetched data.
+      properties:
+        id:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          title: 标题
+          maxLength: 200
+        slug:
+          type: string
+          title: 标识
+          maxLength: 200
+          pattern: ^[-a-zA-Z0-9_]+$
+        subtitle:
+          type: string
+          title: 副标题
+          maxLength: 200
+        category_id:
+          type: integer
+          title: 分类
+          readOnly: true
+        category_name:
+          type: string
+          readOnly: true
+        price_min:
+          type: string
+          readOnly: true
+        price_max:
+          type: string
+          readOnly: true
+        cover_image:
+          type: string
+          readOnly: true
+        is_featured:
+          type: boolean
+          title: 首页推荐
+        description:
+          type: string
+          title: 描述
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+          readOnly: true
+        skus:
+          type: array
+          items: {}
+          readOnly: true
+      required:
+      - category_id
+      - category_name
+      - cover_image
+      - id
+      - images
+      - price_max
+      - price_min
+      - skus
+      - slug
+      - title
+    ProductImage:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        path:
+          type: string
+          title: 图片地址
+          maxLength: 500
+        alt_text:
+          type: string
+          title: 替代文本
+          maxLength: 200
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          title: 排序
+      required:
+      - id
+      - path
+    ProductList:
+      type: object
+      description: Card payload for lists; price range and cover are computed from
+        prefetched data.
+      properties:
+        id:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          title: 标题
+          maxLength: 200
+        slug:
+          type: string
+          title: 标识
+          maxLength: 200
+          pattern: ^[-a-zA-Z0-9_]+$
+        subtitle:
+          type: string
+          title: 副标题
+          maxLength: 200
+        category_id:
+          type: integer
+          title: 分类
+          readOnly: true
+        category_name:
+          type: string
+          readOnly: true
+        price_min:
+          type: string
+          readOnly: true
+        price_max:
+          type: string
+          readOnly: true
+        cover_image:
+          type: string
+          readOnly: true
+        is_featured:
+          type: boolean
+          title: 首页推荐
+      required:
+      - category_id
+      - category_name
+      - cover_image
+      - id
+      - price_max
+      - price_min
+      - slug
+      - title
+    Readiness:
+      type: object
+      properties:
+        status:
+          type: string
+        checks:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+      - checks
+      - status
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 32
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+        nickname:
+          type: string
+          default: ''
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          default: ''
+      required:
+      - password
+      - username
+    RoleEnum:
+      enum:
+      - user
+      - operator
+      - agent
+      - admin
+      type: string
+      description: |-
+        * `user` - 用户
+        * `operator` - 运营
+        * `agent` - 客服
+        * `admin` - 管理员
+    ShopTokenObtainPairRequest:
+      type: object
+      description: Login by username + password; adds auth_version claims and user
+        payload.
+      properties:
+        username:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          title: 用户名
+        nickname:
+          type: string
+          readOnly: true
+          title: 昵称
+        email:
+          type: string
+          format: email
+          readOnly: true
+          title: 邮箱
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+          title: 角色
+        must_change_password:
+          type: boolean
+          readOnly: true
+          title: 需强制修改密码
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 注册时间
+      required:
+      - date_joined
+      - email
+      - id
+      - must_change_password
+      - nickname
+      - role
+      - username
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
