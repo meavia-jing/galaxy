@@ -6,6 +6,8 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import F, Q
 
+from common.images import validate_image_file, validate_image_path
+
 
 class Category(models.Model):
     parent = models.ForeignKey(
@@ -88,7 +90,17 @@ class ProductImage(models.Model):
     product = models.ForeignKey(
         Product, verbose_name="商品", on_delete=models.CASCADE, related_name="images"
     )
-    path = models.CharField("图片地址", max_length=500)
+    path = models.CharField(
+        "图片地址", max_length=500, blank=True, default="", validators=[validate_image_path]
+    )
+    image = models.FileField(
+        "图片文件",
+        upload_to="products",
+        blank=True,
+        default="",
+        validators=[validate_image_file],
+        help_text="上传后自动写入图片地址；类型限 JPG/PNG/WebP/GIF，不超过 5 MB",
+    )
     alt_text = models.CharField("替代文本", max_length=200, blank=True, default="")
     sort_order = models.IntegerField("排序", default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -99,6 +111,24 @@ class ProductImage(models.Model):
         verbose_name_plural = "商品图片"
         ordering = ["sort_order", "id"]
         indexes = [models.Index(fields=["product", "sort_order"], name="catalog_img_prod_idx")]
+
+    def clean(self):
+        super().clean()
+        if not self.path and not self.image:
+            raise ValidationError({"path": "请上传图片或填写图片地址"})
+
+    def save(self, *args, **kwargs):
+        # 后台走 ModelForm 会先跑校验器；shell/脚本/将来的 API 直接写库时，
+        # 这两行是唯一的防线，因此不能只依赖 admin 表单。
+        if self.image:
+            validate_image_file(self.image)
+        validate_image_path(self.path)
+        super().save(*args, **kwargs)
+        if self.image and not self.path:
+            # 文件在 pre_save 阶段才落盘，upload_to 也是那时拼进名字的，
+            # 所以地址必须等 super().save() 之后再补；用 update() 避免再次进 save()。
+            self.path = "/" + self.image.url.lstrip("/")
+            type(self).objects.filter(pk=self.pk).update(path=self.path)
 
 
 class SKU(models.Model):
