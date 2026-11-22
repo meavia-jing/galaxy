@@ -156,7 +156,7 @@ describe('CartView', () => {
     confirmSpy.mockRestore()
   })
 
-  it('[UNIT-FE-37][I04-T01] 确认后删除并提示', async () => {
+  it('[UNIT-FE-37b][I04-T01] 确认后删除并提示', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     const wrapper = await mountView()
 
@@ -181,5 +181,49 @@ describe('CartView', () => {
     await flushPromises()
 
     expect(wrapper.get('[role="alert"]').text()).toBe('库存不足，当前仅剩 1 件')
+  })
+
+  it('[UNIT-FE-43][I04-T01] 不可用行的数量框禁用，避免对失效商品继续改数量', async () => {
+    mocks.fetchCart.mockResolvedValue(
+      summary({
+        items: [item({ id: '9', available: false, unavailable_reason: '商品已下架' })],
+        subtotal: '0.00',
+        selected_count: 0,
+        has_unavailable: true,
+      }),
+    )
+    const wrapper = await mountView()
+
+    const input = wrapper.get('.cart-row__input').element as HTMLInputElement
+    expect(input.disabled).toBe(true)
+
+    // 禁用后即使强行派发 change 也不应发出请求。
+    await wrapper.get('.cart-row__input').trigger('change')
+    await flushPromises()
+    expect(mocks.updateCartItem).not.toHaveBeenCalled()
+  })
+
+  it('[UNIT-FE-44][I04-T01] 不可用行的行金额置灰划线，与底部小计 0.00 的差异有视觉解释', async () => {
+    mocks.fetchCart.mockResolvedValue(
+      summary({
+        items: [item({ id: '9', available: false, unavailable_reason: '商品已下架' })],
+        subtotal: '0.00',
+        selected_count: 0,
+        has_unavailable: true,
+      }),
+    )
+    const wrapper = await mountView()
+
+    const amount = wrapper.get('.cart-row__amount')
+    expect(amount.classes()).toContain('cart-row__amount--off')
+    expect(amount.text()).toBe('¥198.00')
+    expect(wrapper.get('.cart-foot__price').text()).toBe('¥0.00')
+  })
+
+  it('[UNIT-FE-45][I04-T01] 可用行的金额不带失效标记，数量框可编辑', async () => {
+    const wrapper = await mountView()
+
+    expect(wrapper.get('.cart-row__amount').classes()).not.toContain('cart-row__amount--off')
+    expect((wrapper.get('.cart-row__input').element as HTMLInputElement).disabled).toBe(false)
   })
 })

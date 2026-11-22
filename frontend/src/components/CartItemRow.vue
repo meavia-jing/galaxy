@@ -60,14 +60,16 @@ defineExpose({ specText })
         min="1"
         max="99"
         :value="item.quantity"
-        :disabled="busy"
+        :disabled="!item.available || busy"
         :aria-label="`${item.product_title} 数量`"
         @change="submitQuantity"
       />
       <span class="cart-row__stock">库存 {{ item.stock_available }}</span>
     </div>
 
-    <div class="cart-row__amount">¥{{ formatPrice(item.line_amount) }}</div>
+    <div class="cart-row__amount" :class="{ 'cart-row__amount--off': !item.available }">
+      ¥{{ formatPrice(item.line_amount) }}
+    </div>
 
     <button class="btn btn--ghost cart-row__remove" type="button" :disabled="busy" @click="emit('remove')">
       移除
@@ -142,6 +144,13 @@ defineExpose({ specText })
   font-weight: 600;
   color: var(--danger);
   white-space: nowrap;
+}
+
+/* 不可用行不计入小计，金额要明确失效，避免与底部小计对不上时被误读。 */
+.cart-row__amount--off {
+  color: var(--muted);
+  font-weight: 500;
+  text-decoration: line-through;
 }
 
 .cart-row__remove {
