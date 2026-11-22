@@ -27,6 +27,7 @@ const PAGES = [
   ['02-交接文档.html', '作业证据-02-handoff交接文档.png'],
   ['03-基线标签.html', '作业证据-03-基线标签.png'],
   ['04-完成度.html', '作业证据-04-完成度自评.png'],
+  ['05-会话交接.html', '作业证据-05-会话交接卡.png'],
 ]
 
 const missing = PAGES.filter(([src]) => !fs.existsSync(path.join(srcDir, src)))

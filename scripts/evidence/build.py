@@ -295,6 +295,13 @@ def main() -> None:
     body += "</div>"
     (OUT / "04-完成度.html").write_text(styled("作业完成度自评", body), encoding="utf-8")
 
+    # 5 会话交接卡：全文。它是 plan→handoff 模式里「新对话从哪开始」的那份产物。
+    card = "docs/会话交接.md"
+    card_text = (ROOT / card).read_text(encoding="utf-8")
+    body = meta(card, f"续接卡全文（共 {len(card_text.splitlines())} 行），每次会话收尾更新")
+    body += f"<div class='doc'>{md(card_text)}</div>"
+    (OUT / "05-会话交接.html").write_text(styled("会话交接卡", body), encoding="utf-8")
+
     print("built:", sorted(p.name for p in OUT.glob("*.html")))
 
 
