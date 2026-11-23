@@ -14,7 +14,9 @@ from django.core.cache import cache
 from django.test import RequestFactory
 
 from apps.catalog.admin import CategoryAdmin, SKUAdmin
-from apps.catalog.models import Category, Product, SKU
+from apps.catalog.models import Category, Product, ProductImage, SKU
+from apps.catalog.views import CATEGORY_CACHE_KEY, CATEGORY_CACHE_TTL
+from tests.support.cache_timetravel import remaining_ttl, require_locmem, travel
 
 pytestmark = pytest.mark.django_db
 
@@ -192,3 +194,115 @@ def test_admin_price_change_is_visible_immediately(api_client):
 
     after = api_client.get(DETAIL_URL.format(pk=product.pk))
     assert after.json()["data"]["price_min"] == "88.50"
+
+
+# ---------------- 60 秒 TTL 兜底（时间旅行） ----------------
+#
+# 前面几条证明「写入时主动失效」有效；这里证明「即使忘了失效、或进程重启后
+# 缓存里还有旧值」，60 秒之后也一定会回源。两条路径是互补的兜底关系。
+
+
+def test_category_cache_ttl_is_really_60_seconds(api_client):
+    """[INT-CAT-09][I03-T05] 缓存条目真的带 60 秒 TTL，不是永久也不是 0。"""
+    require_locmem()
+    assert CATEGORY_CACHE_TTL == 60, "TTL 常量被改动，需同步验收文档与架构说明"
+
+    make_category("分类")
+    assert api_client.get(CATEGORIES_URL).status_code == 200
+
+    ttl = remaining_ttl(cache, CATEGORY_CACHE_KEY)
+    assert ttl is not None, "分类列表没有被缓存（缓存层失效）"
+    assert 55 <= ttl <= 60, f"写入的 TTL 不是 60 秒，实际剩余 {ttl}"
+
+
+def test_category_cache_still_serves_stale_within_ttl(api_client):
+    """[INT-CAT-10][I03-T05] 30 秒内仍命中缓存（证明兜底不是「每次都回源」）。"""
+    require_locmem()
+    category = make_category("原名")
+    assert api_client.get(CATEGORIES_URL).status_code == 200
+
+    # 绕过 Admin 直接改库，不触发缓存失效，模拟「没人主动失效」的场景
+    Category.objects.filter(pk=category.pk).update(name="改名")
+
+    with travel(30):
+        payload = api_client.get(CATEGORIES_URL).json()["data"]
+
+    assert [item["name"] for item in payload] == ["原名"]
+
+
+def test_category_cache_falls_back_after_60_seconds(api_client):
+    """[INT-CAT-11][I03-T05] 时间旅行 61 秒：无任何失效操作，改动也自动可见。"""
+    require_locmem()
+    category = make_category("原名")
+    assert api_client.get(CATEGORIES_URL).status_code == 200
+
+    Category.objects.filter(pk=category.pk).update(name="改名")
+
+    with travel(61):
+        payload = api_client.get(CATEGORIES_URL).json()["data"]
+
+    assert [item["name"] for item in payload] == ["改名"]
+    # 回源后重新写回缓存（TTL 数值本身由 INT-CAT-09 断言，这里只证明「又存了」）
+    assert remaining_ttl(cache, CATEGORY_CACHE_KEY) is not None
+
+
+# ---------------- 列表查询次数不随商品数增长（N+1 防护） ----------------
+
+
+def _seed_products(category: Category, count: int, offset: int = 0) -> None:
+    for index in range(offset, offset + count):
+        product = make_product(category, f"批量商品{index}", skus=("10.00", "20.00"))
+        ProductImage.objects.create(
+            product=product, path=f"/media/demo/bulk-{index}.png", sort_order=0
+        )
+
+
+def _list_queries(api_client) -> tuple[int, int]:
+    """清空缓存后请求一次列表，返回（SQL 条数，返回的 total）。"""
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    cache.clear()
+    with CaptureQueriesContext(connection) as ctx:
+        response = api_client.get(LIST_URL, {"sort": "price_asc"})
+    return len(ctx), response.json()["data"]["total"]
+
+
+def test_list_query_count_is_constant(api_client):
+    """[INT-CAT-12][I03-T05] 商品数 3 → 12，列表 SQL 条数不变（无 N+1）。
+
+    列表每行要取分类名、最低/最高价、首图；若 select_related/prefetch_related
+    写漏，查询数会随行数线性增长。这里比较 4 倍数据量前后的 SQL 条数。
+    """
+    category = make_category()
+    _seed_products(category, 3)
+    small_queries, small_total = _list_queries(api_client)
+
+    _seed_products(category, 9, offset=3)  # 总数 12，是前者的 4 倍
+    big_queries, big_total = _list_queries(api_client)
+
+    assert (small_total, big_total) == (3, 12)
+    assert big_queries == small_queries, (
+        f"查询数随商品数增长：3 条 {small_queries} 次 → 12 条 {big_queries} 次"
+    )
+    # 绝对上界：计数 + 主查询 + 分类/规格/图片预取，超过就是写漏了预取
+    assert big_queries <= 8, f"列表用掉 {big_queries} 条 SQL，疑似 N+1"
+
+
+def test_detail_query_count_is_constant(api_client):
+    """[INT-CAT-13][I03-T05] 详情页规格数与查询次数无关（首个/第五个 SKU 同价）。"""
+    category = make_category()
+    one = make_product(category, "单规格商品", skus=("10.00",))
+    many = make_product(category, "多规格商品", skus=("10.00", "20.00", "30.00", "40.00", "50.00"))
+    ProductImage.objects.create(product=many, path="/media/demo/many.png")
+
+    def queries_for(pk: int) -> int:
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        cache.clear()
+        with CaptureQueriesContext(connection) as ctx:
+            assert api_client.get(DETAIL_URL.format(pk=pk)).status_code == 200
+        return len(ctx)
+
+    assert queries_for(many.pk) == queries_for(one.pk)

@@ -6,12 +6,24 @@
 from __future__ import annotations
 
 import pytest
+from django.core.cache import cache
 
-from apps.cms.models import ContentPage, PublishStatus
+from apps.cms.models import Banner, ContentPage, PublishStatus
+from apps.cms.views import BANNER_CACHE_KEY, CACHE_TTL
+from tests.support.cache_timetravel import remaining_ttl, require_locmem, travel
 
 pytestmark = pytest.mark.django_db
 
 PAGE_URL = "/api/v1/pages/{slug}/"
+BANNERS_URL = "/api/v1/banners/"
+
+
+@pytest.fixture(autouse=True)
+def _clean_cache():
+    """横幅列表有 60 秒缓存，逐例清空避免相互污染。"""
+    cache.clear()
+    yield
+    cache.clear()
 
 
 def make_page(slug: str, status: str, body: str = "正文内容") -> ContentPage:
@@ -127,3 +139,44 @@ def test_normal_rich_text_round_trips(api_client):
     assert "<em>折扣</em>" in body
     assert '<a href="/pages/faq/" title="常见问题"' in body
     assert body == page.body
+
+
+# ---------------- 横幅 60 秒 TTL 兜底（时间旅行） ----------------
+
+
+def make_banner(title: str) -> Banner:
+    return Banner.objects.create(title=title, image_path="/media/demo/banner.png")
+
+
+def test_banner_cache_ttl_is_really_60_seconds(api_client):
+    """[INT-CMS-09][I03-T05] 横幅缓存写入 60 秒 TTL，不是永久也不是 0。"""
+    require_locmem()
+    assert CACHE_TTL == 60, "TTL 常量被改动，需同步验收文档与架构说明"
+
+    make_banner("首屏轮播")
+    assert api_client.get(BANNERS_URL).status_code == 200
+
+    ttl = remaining_ttl(cache, BANNER_CACHE_KEY)
+    assert ttl is not None, "横幅列表没有被缓存"
+    assert 55 <= ttl <= 60, f"写入的 TTL 不是 60 秒，实际剩余 {ttl}"
+
+
+def test_banner_cache_falls_back_after_60_seconds(api_client):
+    """[INT-CMS-10][I03-T05] 时间旅行 61 秒：绕过 Admin 改库，改动也会自动可见。"""
+    require_locmem()
+    banner = make_banner("旧标题")
+    assert [item["title"] for item in api_client.get(BANNERS_URL).json()["data"]] == ["旧标题"]
+
+    # 直接改库，不触发 invalidate_cms_cache，模拟「失效钩子漏了」或进程刚重启
+    Banner.objects.filter(pk=banner.pk).update(title="新标题")
+
+    # 59 秒：还没到点，仍是旧值（证明缓存真的在起作用）
+    with travel(59):
+        assert [item["title"] for item in api_client.get(BANNERS_URL).json()["data"]] == [
+            "旧标题"
+        ]
+
+    with travel(61):
+        assert [item["title"] for item in api_client.get(BANNERS_URL).json()["data"]] == [
+            "新标题"
+        ]
